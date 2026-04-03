@@ -1,0 +1,27 @@
+appId: com.gattendance.app
+productName: G-Attendance
+directories:
+  output: dist-electron
+
+files:
+  - electron/**/*
+  - frontend/dist/**/*
+  - "!node_modules"
+  - "!frontend/node_modules"
+  - "!frontend/src"
+  - "!data"
+  - "!scripts"
+  - "!__pycache__"
+
+extraResources:
+  - from: dist-backend/
+    to: backend/
+  - from: data/
+    to: data/
+
+mac:
+  category: public.app-category.business
+  target:
+    - dmg
+    - dir
+  icon: null

@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+frontend/dist/
+
+# Python
+__pycache__/
+*.pyc
+
+# Test output
+test-results/
+
+# Mac
+.DS_Store
+
+# IDE
+.idea/
+*.iml
+*.iws
+.vscode/
+
+# Environment
+.env*
+
+# Claude Code local settings
+.claude/
+
+# Excel data files (tracked outside git)
+*.xlsx
+*.xlsm
+~$*
+data/
+
+# Other
+Banking transactions/
+.gl-data/
+*.app
