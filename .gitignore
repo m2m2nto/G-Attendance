@@ -3,7 +3,10 @@ node_modules/
 
 # Build output
 dist/
-build/
+dist-backend/
+dist-electron/
+build/app/
+build/app.pkg
 frontend/dist/
 
 # Python

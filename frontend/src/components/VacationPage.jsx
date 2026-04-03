@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead,
   TableRow, Paper, Fab, IconButton, Snackbar, Alert, Chip, FormControl,
-  InputLabel, Select, MenuItem, Tooltip,
+  InputLabel, Select, MenuItem, Tooltip, TableSortLabel,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
@@ -16,25 +16,114 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December",
 ];
 
+function parseDateDetails(detail) {
+  if (!detail) return [];
+  const parts = detail.split(",").map((s) => s.trim()).filter(Boolean);
+  const result = [];
+  for (const part of parts) {
+    const half = part.includes("(1/2)");
+    const clean = part.replace("(1/2)", "").trim();
+    const rangeMatch = clean.match(/^(\d+)\s*-\s*(\d+)$/);
+    if (rangeMatch) {
+      const start = parseInt(rangeMatch[1]);
+      const end = parseInt(rangeMatch[2]);
+      for (let d = start; d <= end; d++) {
+        result.push({ day: d, half: false });
+      }
+    } else {
+      const dayNum = parseInt(clean);
+      if (!isNaN(dayNum)) {
+        result.push({ day: dayNum, half });
+      }
+    }
+  }
+  return result;
+}
+
+function DateChips({ detail, month }) {
+  const dates = parseDateDetails(detail);
+  if (dates.length === 0) return <Typography variant="body2" color="text.secondary">—</Typography>;
+  const monthAbbr = MONTHS[month]?.substring(0, 3) || "";
+  return (
+    <Box sx={{ display: "flex", gap: 0.4, flexWrap: "wrap" }}>
+      {dates.map((d, i) => (
+        <Chip
+          key={i}
+          label={`${d.day}${d.half ? "½" : ""}`}
+          size="small"
+          variant={d.half ? "outlined" : "filled"}
+          sx={{
+            height: 22,
+            fontSize: "0.75rem",
+            fontWeight: 600,
+            minWidth: 28,
+            "& .MuiChip-label": { px: 0.6 },
+            ...(d.half
+              ? { borderColor: "#1a73e8", color: "#1a73e8" }
+              : { bgcolor: "#e8f0fe", color: "#1a73e8" }),
+          }}
+        />
+      ))}
+    </Box>
+  );
+}
+
+const COLUMNS = [
+  { id: "name", label: "Person", align: "left" },
+  { id: "month", label: "Month", align: "left" },
+  { id: "days_count", label: "Days", align: "right" },
+  { id: "dates_detail", label: "Date Details", align: "left", sortable: false },
+  { id: "updated_at", label: "Last Updated", align: "left" },
+];
+
+function descendingComparator(a, b, orderBy) {
+  const va = a[orderBy] ?? "";
+  const vb = b[orderBy] ?? "";
+  if (vb < va) return -1;
+  if (vb > va) return 1;
+  return 0;
+}
+
+function getComparator(order, orderBy) {
+  return order === "desc"
+    ? (a, b) => descendingComparator(a, b, orderBy)
+    : (a, b) => -descendingComparator(a, b, orderBy);
+}
+
 export default function VacationPage({ year, onDataChange }) {
   const [entries, setEntries] = useState([]);
   const [team, setTeam] = useState([]);
   const [filterName, setFilterName] = useState("all");
+  const [filterMonth, setFilterMonth] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editEntry, setEditEntry] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [snack, setSnack] = useState({ open: false, message: "", severity: "success" });
+  const [order, setOrder] = useState("asc");
+  const [orderBy, setOrderBy] = useState("month");
 
   const load = () => {
     const params = { year };
     if (filterName !== "all") params.name = filterName;
+    if (filterMonth !== "all") params.month = filterMonth;
     Promise.all([getLeave("vacation", params), getTeam()]).then(([data, t]) => {
       setEntries(data);
       setTeam(t.filter((m) => !m.end_year));
     });
   };
 
-  useEffect(load, [year, filterName]);
+  useEffect(load, [year, filterName, filterMonth]);
+
+  const handleSort = (columnId) => {
+    const isAsc = orderBy === columnId && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(columnId);
+  };
+
+  const sortedEntries = useMemo(
+    () => [...entries].sort(getComparator(order, orderBy)),
+    [entries, order, orderBy],
+  );
 
   const handleSave = async (entries) => {
     try {
@@ -64,43 +153,79 @@ export default function VacationPage({ year, onDataChange }) {
     onDataChange?.();
   };
 
+  const totalDays = useMemo(
+    () => entries.reduce((sum, e) => sum + (e.days_count || 0), 0),
+    [entries],
+  );
+
   return (
     <Box>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
-        <Typography variant="h5">
-          Vacation <Typography component="span" color="text.secondary" sx={{ fontSize: "1rem" }}>({year})</Typography>
-        </Typography>
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Filter by person</InputLabel>
-          <Select value={filterName} onChange={(e) => setFilterName(e.target.value)} label="Filter by person">
-            <MenuItem value="all">All members</MenuItem>
-            {team.map((m) => (
-              <MenuItem key={m.name} value={m.name}>{m.name}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "baseline", gap: 1.5 }}>
+          <Typography variant="h5">
+            Vacation <Typography component="span" color="text.secondary" sx={{ fontSize: "1rem" }}>({year})</Typography>
+          </Typography>
+          {entries.length > 0 && (
+            <Chip
+              label={`${totalDays} day${totalDays !== 1 ? "s" : ""} total`}
+              size="small"
+              sx={{ bgcolor: "#e8f0fe", color: "#1a73e8", fontWeight: 600 }}
+            />
+          )}
+        </Box>
+        <Box sx={{ display: "flex", gap: 1.5 }}>
+          <FormControl size="small" sx={{ minWidth: 140 }}>
+            <InputLabel>Person</InputLabel>
+            <Select value={filterName} onChange={(e) => setFilterName(e.target.value)} label="Person">
+              <MenuItem value="all">All members</MenuItem>
+              {team.map((m) => (
+                <MenuItem key={m.name} value={m.name}>{m.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ minWidth: 130 }}>
+            <InputLabel>Month</InputLabel>
+            <Select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} label="Month">
+              <MenuItem value="all">All months</MenuItem>
+              {MONTHS.slice(1).map((m, i) => (
+                <MenuItem key={i + 1} value={i + 1}>{m}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
       </Box>
 
       <TableContainer component={Paper}>
-        <Table>
+        <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Person</TableCell>
-              <TableCell>Month</TableCell>
-              <TableCell align="right">Days</TableCell>
-              <TableCell>Date Details</TableCell>
-              <TableCell align="right" width={100}>Actions</TableCell>
+              {COLUMNS.map((col) => (
+                <TableCell key={col.id} align={col.align} sx={{ fontWeight: 600, whiteSpace: "nowrap" }}>
+                  {col.sortable === false ? (
+                    col.label
+                  ) : (
+                    <TableSortLabel
+                      active={orderBy === col.id}
+                      direction={orderBy === col.id ? order : "asc"}
+                      onClick={() => handleSort(col.id)}
+                    >
+                      {col.label}
+                    </TableSortLabel>
+                  )}
+                </TableCell>
+              ))}
+              <TableCell align="right" width={100} sx={{ fontWeight: 600 }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {entries.length === 0 ? (
+            {sortedEntries.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 4, color: "text.secondary" }}>
-                  No vacation entries for {year}
+                <TableCell colSpan={COLUMNS.length + 1} align="center" sx={{ py: 4, color: "text.secondary" }}>
+                  No vacation entries{filterName !== "all" || filterMonth !== "all" ? " matching filters" : ""} for {year}
                 </TableCell>
               </TableRow>
             ) : (
-              entries.map((e) => (
+              sortedEntries.map((e) => (
                 <TableRow
                   key={`${e.name}-${e.month}`}
                   hover
@@ -118,7 +243,12 @@ export default function VacationPage({ year, onDataChange }) {
                     />
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" color="text.secondary">{e.dates_detail}</Typography>
+                    <DateChips detail={e.dates_detail} month={e.month} />
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.8rem" }}>
+                      {e.updated_at || "\u2014"}
+                    </Typography>
                   </TableCell>
                   <TableCell align="right">
                     <Tooltip title="Edit">

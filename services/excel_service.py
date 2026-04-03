@@ -397,6 +397,25 @@ def _get_leave_col(leave_type):
         return 4, 5  # Col D, E
 
 
+def _leave_ts_key(leave_type, name, year, month):
+    return f"{leave_type}|{name}|{year}|{month}"
+
+
+def _set_leave_timestamp(leave_type, name, year, month):
+    """Record the current timestamp for a leave entry update."""
+    settings = _load_settings()
+    timestamps = settings.get("leave_timestamps", {})
+    timestamps[_leave_ts_key(leave_type, name, year, month)] = datetime.now().strftime("%Y-%m-%d %H:%M")
+    settings["leave_timestamps"] = timestamps
+    _save_settings(settings)
+
+
+def _get_leave_timestamp(leave_type, name, year, month):
+    """Get the last-update timestamp for a leave entry, or None."""
+    settings = _load_settings()
+    return settings.get("leave_timestamps", {}).get(_leave_ts_key(leave_type, name, year, month))
+
+
 def get_leave(leave_type, year=None, name=None, month=None):
     """Read leave entries from person sheets."""
     wb = _open_for_read()
@@ -434,6 +453,7 @@ def get_leave(leave_type, year=None, name=None, month=None):
                         "month": m,
                         "days_count": days,
                         "dates_detail": str(detail_val) if detail_val else "",
+                        "updated_at": _get_leave_timestamp(leave_type, person, y, m),
                     })
     wb.close()
     return results
@@ -467,6 +487,7 @@ def add_leave(leave_type, name, year, month, days_count, dates_detail):
         ws.cell(row=row, column=detail_col, value=new_detail)
         _save(wb)
 
+    _set_leave_timestamp(leave_type, name, year, month)
     return {
         "name": name, "year": year, "month": month,
         "days_count": new_count, "dates_detail": new_detail or "",
@@ -492,6 +513,7 @@ def update_leave(leave_type, name, year, month, data):
             ws.cell(row=row, column=detail_col, value=data["dates_detail"] or None)
         _save(wb)
 
+    _set_leave_timestamp(leave_type, name, year, month)
     return {
         "name": name, "year": year, "month": month,
         "days_count": data.get("days_count", 0),
