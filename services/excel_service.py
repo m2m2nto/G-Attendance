@@ -1,14 +1,35 @@
 import json
 import os
+import sys
 import threading
 from datetime import datetime
 from openpyxl import load_workbook
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
-_DEFAULT_FILE = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)),
-    "Holidays and sick leaves - Counting.xlsx",
-)
+
+def _resolve_data_dir():
+    """Resolve the data directory, handling both dev and PyInstaller-frozen modes.
+
+    When frozen, the bundled data lives under <app>/Contents/Resources/data/.
+    In dev, it lives under the project root's data/ dir.
+    """
+    if getattr(sys, "frozen", False):
+        # PyInstaller: sys._MEIPASS is the temp extract dir, but data is in Resources
+        # The executable is at <app>/Contents/Resources/backend/app
+        # Data is at <app>/Contents/Resources/data/
+        exe_dir = os.path.dirname(sys.executable)  # .../Resources/backend
+        resources_dir = os.path.dirname(exe_dir)     # .../Resources
+        return os.path.join(resources_dir, "data")
+    return os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
+
+
+DATA_DIR = _resolve_data_dir()
+if getattr(sys, "frozen", False):
+    _DEFAULT_FILE = os.path.join(DATA_DIR, "Holidays and sick leaves - Counting.xlsx")
+else:
+    _DEFAULT_FILE = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)),
+        "Holidays and sick leaves - Counting.xlsx",
+    )
 _SETTINGS_FILE = os.path.join(DATA_DIR, "app_settings.json")
 
 _lock = threading.Lock()
@@ -534,8 +555,8 @@ def delete_leave(leave_type, name, year, month):
             wb.close()
             return
         ws = wb[sheet_name]
-        ws.cell(row=row, column=count_col, value=None)
-        ws.cell(row=row, column=detail_col, value=None)
+        ws.cell(row=row, column=count_col).value = None
+        ws.cell(row=row, column=detail_col).value = None
         _save(wb)
 
 
