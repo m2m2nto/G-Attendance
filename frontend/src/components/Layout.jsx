@@ -10,6 +10,7 @@ import BeachAccessIcon from "@mui/icons-material/BeachAccess";
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import EventIcon from "@mui/icons-material/Event";
 import SettingsIcon from "@mui/icons-material/Settings";
+import UpdateBanner from "./UpdateBanner";
 
 const DRAWER_WIDTH = 240;
 
@@ -129,6 +130,7 @@ export default function Layout({ page, setPage, year, setYear, children }) {
           width: isMobile ? "100%" : `calc(100% - ${DRAWER_WIDTH}px)`,
         }}
       >
+        <UpdateBanner />
         {children}
       </Box>
     </Box>
