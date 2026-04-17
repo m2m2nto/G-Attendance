@@ -87,6 +87,7 @@ function createWindow() {
     minHeight: 600,
     title: "G-Attendance",
     titleBarStyle: "hiddenInset",
+    trafficLightPosition: { x: 16, y: 13 },
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
