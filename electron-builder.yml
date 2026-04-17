@@ -18,6 +18,10 @@ extraResources:
     to: backend/
   - from: data/
     to: data/
+  - from: "Holidays and sick leaves - Counting.xlsx"
+    to: "data/Holidays and sick leaves - Counting.xlsx"
+  - from: frontend/dist/
+    to: frontend/dist/
 
 mac:
   category: public.app-category.business
