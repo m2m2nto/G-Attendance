@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  Box, Typography, Paper, TextField, Button, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, Snackbar, Alert,
+  Box, Typography, Paper, TextField, Button, IconButton, Table, TableBody,
+  TableCell, TableContainer, TableHead, TableRow, Snackbar, Alert,
   Dialog, DialogTitle, DialogContent, DialogActions, List,
   ListItemButton, ListItemIcon, ListItemText, Breadcrumbs, Link, Chip,
 } from "@mui/material";
@@ -13,6 +13,8 @@ import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import DescriptionIcon from "@mui/icons-material/Description";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import SystemUpdateIcon from "@mui/icons-material/SystemUpdate";
 import {
   getConfig, updateConfig, getTeam, addTeamMember,
   getDataFile, setDataFile, browseFiles,
@@ -226,6 +228,9 @@ export default function SettingsPage() {
   const [snack, setSnack] = useState({ open: false, message: "", severity: "success" });
   const [filePath, setFilePath] = useState("");
   const [browseOpen, setBrowseOpen] = useState(false);
+  const [appVersion, setAppVersion] = useState({ version: __APP_VERSION__, buildNumber: __APP_BUILD__ });
+
+  const isElectron = !!window.electronAPI?.getAppVersion;
 
   const load = () => {
     Promise.all([getConfig(), getTeam(), getDataFile()]).then(([c, t, f]) => {
@@ -239,6 +244,12 @@ export default function SettingsPage() {
   };
 
   useEffect(load, []);
+
+  useEffect(() => {
+    if (isElectron) {
+      window.electronAPI.getAppVersion().then(setAppVersion);
+    }
+  }, [isElectron]);
 
   const handleFileSelect = async (path) => {
     setBrowseOpen(false);
@@ -403,6 +414,36 @@ export default function SettingsPage() {
             </TableBody>
           </Table>
         </TableContainer>
+      </Paper>
+
+      {/* About */}
+      <Paper sx={{ p: 3, mt: 3 }}>
+        <Typography variant="h6" sx={{ mb: 2, fontSize: "1rem" }}>
+          <InfoOutlinedIcon sx={{ fontSize: 18, mr: 0.5, verticalAlign: "text-bottom" }} />
+          About
+        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box>
+            <Typography variant="body1" fontWeight={500}>
+              G-Attendance
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              v{appVersion.version} (build {appVersion.buildNumber})
+            </Typography>
+          </Box>
+          <Box sx={{ flex: 1 }} />
+          {isElectron && (
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<SystemUpdateIcon />}
+              onClick={() => window.electronAPI.checkForUpdates()}
+              sx={{ textTransform: "none" }}
+            >
+              Check for updates
+            </Button>
+          )}
+        </Box>
       </Paper>
 
       {/* Dialogs */}
