@@ -1,6 +1,9 @@
 import os
 from flask import Blueprint, jsonify, request
-from services.excel_service import get_config, update_config, get_data_file, set_data_file
+from services.excel_service import (
+    get_config, update_config, get_data_file, set_data_file,
+    _load_settings, _save_settings,
+)
 
 config_bp = Blueprint("config", __name__)
 
@@ -58,3 +61,52 @@ def browse_filesystem():
 
     parent = os.path.dirname(path)
     return jsonify({"current": path, "parent": parent if parent != path else None, "items": items})
+
+
+# ---------------------------------------------------------------------------
+# App users (for audit trail)
+# ---------------------------------------------------------------------------
+
+@config_bp.route("/users", methods=["GET"])
+def get_app_users():
+    settings = _load_settings()
+    return jsonify({
+        "users": settings.get("app_users", []),
+        "current_user": settings.get("current_user", None),
+    })
+
+
+@config_bp.route("/users/current", methods=["PUT"])
+def set_current_user():
+    data = request.get_json()
+    name = data.get("name", "").strip()
+    if not name:
+        return jsonify({"error": "Name is required"}), 400
+
+    settings = _load_settings()
+    users = settings.get("app_users", [])
+    if name not in users:
+        return jsonify({"error": f"User '{name}' not found"}), 404
+
+    settings["current_user"] = name
+    _save_settings(settings)
+    return jsonify({"current_user": name})
+
+
+@config_bp.route("/users", methods=["POST"])
+def add_app_user():
+    data = request.get_json()
+    name = data.get("name", "").strip()
+    if not name:
+        return jsonify({"error": "Name is required"}), 400
+
+    settings = _load_settings()
+    users = settings.get("app_users", [])
+    if name in users:
+        return jsonify({"error": f"User '{name}' already exists"}), 409
+
+    users.append(name)
+    settings["app_users"] = users
+    settings["current_user"] = name
+    _save_settings(settings)
+    return jsonify({"users": users, "current_user": name}), 201
