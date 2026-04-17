@@ -321,13 +321,14 @@ export default function SettingsPage() {
       {/* Vacation Policy */}
       <Paper sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" sx={{ mb: 2, fontSize: "1rem" }}>Vacation Policy</Typography>
-        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "flex-end" }}>
+        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "flex-start" }}>
           <TextField
             label="Base vacation days / year"
             type="number"
             value={baseDays}
             onChange={(e) => setBaseDays(e.target.value)}
             size="small"
+            helperText=" "
             sx={{ width: 200 }}
           />
           <TextField
@@ -337,6 +338,7 @@ export default function SettingsPage() {
             onChange={(e) => setAccrual(e.target.value)}
             size="small"
             inputProps={{ step: 0.0001 }}
+            helperText=" "
             sx={{ width: 200 }}
           />
           <TextField
@@ -345,13 +347,14 @@ export default function SettingsPage() {
             value={carryover}
             onChange={(e) => setCarryover(e.target.value)}
             size="small"
-            helperText={carryover ? `Until end of ${MONTH_NAMES[parseInt(carryover)] || ""}` : ""}
+            helperText={carryover ? `Until end of ${MONTH_NAMES[parseInt(carryover)] || ""}` : " "}
             sx={{ width: 200 }}
           />
           <Button
             variant="contained"
             startIcon={<SaveIcon />}
             onClick={handleSaveConfig}
+            sx={{ mt: "8px", height: 40 }}
           >
             Save
           </Button>

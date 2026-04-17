@@ -71,16 +71,16 @@ export default function Layout({ page, setPage, year, setYear, children }) {
           zIndex: (t) => t.zIndex.drawer + 1,
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ WebkitAppRegion: "drag" }}>
           {isMobile && (
-            <IconButton edge="start" onClick={() => setMobileOpen(!mobileOpen)} sx={{ mr: 1, color: "text.secondary" }}>
+            <IconButton edge="start" onClick={() => setMobileOpen(!mobileOpen)} sx={{ mr: 1, color: "text.secondary", WebkitAppRegion: "no-drag" }}>
               <MenuIcon />
             </IconButton>
           )}
-          <Typography variant="h6" sx={{ color: "text.primary", flexGrow: 1, fontSize: "1.25rem" }}>
+          <Typography variant="h6" sx={{ color: "text.primary", flexGrow: 1, fontSize: "1.25rem", pl: "60px" }}>
             G-Attendance
           </Typography>
-          <FormControl size="small" sx={{ minWidth: 100 }}>
+          <FormControl size="small" sx={{ minWidth: 100, WebkitAppRegion: "no-drag" }}>
             <Select
               value={year}
               onChange={(e) => setYear(e.target.value)}
