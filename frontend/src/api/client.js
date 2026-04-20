@@ -39,4 +39,9 @@ export const getDataFile = () => api.get("/config/file").then((r) => r.data);
 export const setDataFile = (path) => api.put("/config/file", { path }).then((r) => r.data);
 export const browseFiles = (path) => api.get("/config/browse", { params: { path } }).then((r) => r.data);
 
+// App users (audit trail)
+export const getAppUsers = () => api.get("/config/users").then((r) => r.data);
+export const setCurrentUser = (name) => api.put("/config/users/current", { name }).then((r) => r.data);
+export const addAppUser = (name) => api.post("/config/users", { name }).then((r) => r.data);
+
 export default api;
