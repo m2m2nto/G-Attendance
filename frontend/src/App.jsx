@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { ThemeProvider, CssBaseline } from "@mui/material";
 import theme from "./theme";
 import Layout from "./components/Layout";
@@ -7,6 +7,7 @@ import VacationPage from "./components/VacationPage";
 import SickLeavePage from "./components/SickLeavePage";
 import HolidaysPage from "./components/HolidaysPage";
 import SettingsPage from "./components/SettingsPage";
+import { getAppUsers } from "./api/client";
 
 const PAGES = {
   team: TeamOverview,
@@ -20,9 +21,18 @@ export default function App() {
   const [page, setPage] = useState("team");
   const [year, setYear] = useState(new Date().getFullYear());
   const [refreshKey, setRefreshKey] = useState(0);
+  const [appUsers, setAppUsers] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const triggerRefresh = useCallback(() => {
     setRefreshKey((k) => k + 1);
+  }, []);
+
+  useEffect(() => {
+    getAppUsers().then((data) => {
+      setAppUsers(data.users || []);
+      setCurrentUser(data.current_user || null);
+    });
   }, []);
 
   const PageComponent = PAGES[page] || TeamOverview;
@@ -30,8 +40,22 @@ export default function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Layout page={page} setPage={setPage} year={year} setYear={setYear}>
-        <PageComponent year={year} key={`${page}-${year}-${refreshKey}`} onDataChange={triggerRefresh} />
+      <Layout
+        page={page}
+        setPage={setPage}
+        year={year}
+        setYear={setYear}
+        appUsers={appUsers}
+        setAppUsers={setAppUsers}
+        currentUser={currentUser}
+        setCurrentUser={setCurrentUser}
+      >
+        <PageComponent
+          year={year}
+          key={`${page}-${year}-${refreshKey}`}
+          onDataChange={triggerRefresh}
+          currentUser={currentUser}
+        />
       </Layout>
     </ThemeProvider>
   );
