@@ -212,7 +212,7 @@ export default function Layout({
                 textAlign: "center",
               }}
             >
-              <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.9rem" }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.9rem", color: "text.primary" }}>
                 {year}
               </Typography>
             </Box>
@@ -258,6 +258,7 @@ export default function Layout({
               sx={{
                 fontWeight: 500,
                 whiteSpace: "nowrap",
+                color: "text.primary",
                 display: { xs: "none", sm: "block" },
               }}
             >
