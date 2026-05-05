@@ -1,6 +1,6 @@
 # G-Attendance — Specification
 
-> Source of truth for what this project is, how it is built, and the guardrails around changes. This spec reflects the codebase as of 2026-04-16. When code and spec disagree, update the spec in the same change.
+> Source of truth for what this project is, how it is built, and the guardrails around changes. This spec reflects the codebase as of 2026-05-05. When code and spec disagree, update the spec in the same change.
 
 ## 1. Objective
 
@@ -29,6 +29,8 @@ The project is also a long-running experiment in AI-agent-driven development: mo
 | `python app.py` | Run Flask on `:5001`, serves API + built frontend |
 | `cd frontend && npm run dev` | Vite dev server with HMR (talks to Flask on `:5001`) |
 | `cd frontend && npm run build` | Build frontend to `frontend/dist/` |
+| `npm run electron:dev` | Run Electron shell against the dev backend / frontend |
+| `pytest` | Run the backend test suite (requires `pip install -r requirements-dev.txt`) |
 | `python scripts/import_data.py` | One-time migration from original Excel workbook |
 
 ### Build & release
@@ -54,6 +56,7 @@ After every pushed commit:
 app.py                    Flask entry point (port 5001, serves API + frontend dist)
 app.spec                  PyInstaller spec
 requirements.txt          Flask 3.1, flask-cors 5, openpyxl 3.1
+requirements-dev.txt      pytest + pytest-cov for backend tests
 package.json              Electron + build scripts
 electron-builder.yml      Electron packaging config
 
@@ -62,7 +65,7 @@ api/                      Flask blueprints (one per domain)
   leave.py                /api/leave       — vacation + sick leave entries
   holidays.py             /api/holidays    — Luxembourg public holidays
   balances.py             /api/balances    — computed vacation balances
-  config.py               /api/config      — app settings
+  config.py               /api/config      — app settings + app users (audit identity)
 
 services/
   excel_service.py        Single read/write layer over attendance.xlsx (openpyxl)
@@ -72,28 +75,42 @@ scripts/
 
 data/
   attendance.xlsx         Primary data store (human-readable, editable in Excel)
-  app_settings.json       Non-tabular app settings
+  app_settings.json       Non-tabular app settings (incl. app_users + current_user)
 
 electron/
   main.js                 Spawns PyInstaller backend, loads Flask URL in BrowserWindow
-  preload.js              IPC bridge
+  preload.js              IPC bridge (auto-update channel)
+  updater.js              GitHub Releases auto-updater (zip + version check, IPC events)
 
-frontend/                 React 18 + MUI 6 + Vite 6 + react-router 7
+frontend/                 React 18 + MUI 6 + Vite 6
   src/
     main.jsx              Entry
-    App.jsx               Router + layout
+    App.jsx               Top-level shell; tracks page, year, app users, current user
     theme.js              MUI theme (Gmail-like tokens)
-    api/client.js         Axios instance
+    api/client.js         Axios instance + typed helpers (incl. getAppUsers)
     components/
-      Layout.jsx          App shell (sidebar + content)
+      Layout.jsx          App shell — toolbar, draggable title band, collapsible sidebar, user + year selectors
       TeamOverview.jsx    Dashboard home
       VacationPage.jsx    Sortable vacation table, date chips
       SickLeavePage.jsx   Sick leave list
       HolidaysPage.jsx    Luxembourg holidays
-      SettingsPage.jsx    App config
+      SettingsPage.jsx    App config + app user management
       LeaveDialog.jsx     Add/edit leave entry
       ConfirmDialog.jsx   Reusable confirm modal
+      UpdateBanner.jsx    Auto-update prompt (driven by electron/updater.js IPC events)
 
+tests/                    Backend pytest suite
+  conftest.py             Shared fixtures (tmp workbook copies)
+  fixtures/minimal.xlsx   Reference workbook for round-trip tests
+  test_accrual_formula.py
+  test_compute_balance.py
+  test_parse_days.py
+  test_leave_roundtrip.py
+  test_file_locked.py     409 path when attendance.xlsx is locked by Excel
+  test_api_leave.py
+  test_smoke.py
+
+tasks/                    Working notes for in-flight plans (plan.md, todo.md) — not packaged
 dist-backend/             PyInstaller output (gitignored)
 dist-electron/            electron-builder output (gitignored)
 G-Attendance.app          Last built macOS app (kept at repo root for convenience)
@@ -109,7 +126,7 @@ G-Attendance.app          Last built macOS app (kept at repo root for convenienc
 | Frontend framework | React | 18.3 |
 | UI library | Material UI (`@mui/material`, `@mui/icons-material`) | 6.4 |
 | Date pickers | `@mui/x-date-pickers` + `dayjs` | 8.27 / 1.11 |
-| Router | `react-router-dom` | 7.x |
+| Routing | Local state in `App.jsx` (single-window app, no URL routing) | — |
 | HTTP client | `axios` | 1.7 |
 | Bundler | Vite | 6.x |
 | Backend | Flask + flask-cors | 3.1 / 5.0 |
@@ -137,6 +154,7 @@ Swaps to any of the above require explicit approval (see §6 Boundaries).
 - `api/client.js` is the single axios instance; components call typed helpers, not raw `fetch`.
 - File-per-component under `components/`. Page components are `<Name>Page.jsx`.
 - Dates handled with `dayjs` and `@mui/x-date-pickers` — no mixing with native `Date` in render paths.
+- Page navigation lives in `App.jsx` state — no URL router. Don't add `react-router-dom` (or any router) without a concrete need; the app is intentionally single-window.
 
 **UX**
 
@@ -149,7 +167,7 @@ Swaps to any of the above require explicit approval (see §6 Boundaries).
 - `data/attendance.xlsx` must remain openable and editable in Excel at all times.
 - Preserve header formatting, column widths, and existing sheet structure when writing.
 - No pickling, no binary sidecar formats — if a value can live in the workbook, it lives in the workbook.
-- Non-tabular app state (e.g., feature toggles) goes in `data/app_settings.json`.
+- Non-tabular app state goes in `data/app_settings.json`. This currently includes `app_users` (the list of operators allowed to record actions) and `current_user` (the active operator, used for audit-trail identity in the UI).
 
 ### Business rules (Luxembourg)
 
@@ -162,21 +180,27 @@ Swaps to any of the above require explicit approval (see §6 Boundaries).
 
 ## 5. Testing strategy
 
-Current state: **no automated test suite**. This is the biggest known gap.
+### Backend (in place)
 
-### What verification looks like today
+A `pytest` suite lives in `tests/`. Run it with `pytest` after installing `requirements-dev.txt`. Fixtures in `tests/conftest.py` copy `tests/fixtures/minimal.xlsx` into a tmp dir so tests never touch the real `data/attendance.xlsx`.
 
-- Manual smoke on the built `.app` before release.
-- `python app.py` + `npm run dev`, exercise each page, check Excel file contents after writes.
-- For Excel changes: open `data/attendance.xlsx` in Excel after the test to confirm it still loads cleanly.
+Current coverage:
 
-### When tests are added (planned, not yet implemented)
+- `test_accrual_formula.py`, `test_compute_balance.py` — Luxembourg accrual + carry-over math.
+- `test_parse_days.py` — half-day and date-range parsing.
+- `test_leave_roundtrip.py` — write via the service, re-read with a fresh openpyxl load, assert values and formatting survive.
+- `test_file_locked.py` — `IOError` on a locked workbook surfaces as HTTP 409.
+- `test_api_leave.py`, `test_smoke.py` — Flask blueprint smoke + leave endpoints.
 
-- **Backend**: `pytest` against `services/excel_service.py` using fixture workbooks in a tmp dir. Must cover accrual, carry-over cutoff, half-day math, and the "file locked" 409 path.
-- **Frontend**: Vitest + React Testing Library for leave dialog validation and balance rendering. Browser-level flows can use the `webapp-testing` / Playwright skill.
-- **Integration**: round-trip test — write via API, re-read the `.xlsx` with a fresh openpyxl load, assert values and that formatting survived.
+Backend changes that touch business rules, the Excel layer, or a leave/balance endpoint must extend this suite (or explain in the PR why no test fits) — see §6 *Always do*.
 
-Until that suite exists, every non-trivial change must include a written manual test plan in the PR description.
+### Frontend (not yet automated)
+
+Still manual today: `python app.py` + `npm run dev`, exercise each page, then re-open `data/attendance.xlsx` in Excel to confirm it still loads cleanly.
+
+Planned: Vitest + React Testing Library for leave dialog validation and balance rendering; Playwright (`webapp-testing` skill) for browser-level flows.
+
+Until the frontend suite lands, every non-trivial UI change still ships with a written manual test plan in the PR description.
 
 ## 6. Boundaries
 
@@ -189,6 +213,7 @@ Until that suite exists, every non-trivial change must include a written manual 
 - Upload **only `.zip`** to releases. Never `.dmg`.
 - Keep CLAUDE.md and this SPEC.md in sync with reality.
 - Respect Luxembourg business rules (26 days, accrual, March carry-over cutoff, half-days, 11 holidays).
+- Extend the `pytest` suite in `tests/` whenever a change touches business rules, `services/excel_service.py`, or a leave/balance endpoint. If no test fits, justify it in the PR description.
 
 ### Ask first
 
