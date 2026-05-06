@@ -27,8 +27,9 @@ const NAV_ITEMS = [
   { id: "vacation", label: "Vacation", icon: <BeachAccessIcon /> },
   { id: "sick", label: "Sick Leave", icon: <LocalHospitalIcon /> },
   { id: "holidays", label: "Public Holidays", icon: <EventIcon /> },
-  { id: "settings", label: "Settings", icon: <SettingsIcon /> },
 ];
+
+const SETTINGS_ITEM = { id: "settings", label: "Settings", icon: <SettingsIcon /> };
 
 const MIN_YEAR = 2022;
 const MAX_YEAR = new Date().getFullYear() + 1;
@@ -56,7 +57,9 @@ export default function Layout({
     setSidebarOpen(!isMobile);
   }, [isMobile]);
 
-  const currentPageLabel = NAV_ITEMS.find((n) => n.id === page)?.label || "";
+  const currentPageLabel =
+    NAV_ITEMS.find((n) => n.id === page)?.label ||
+    (page === SETTINGS_ITEM.id ? SETTINGS_ITEM.label : "");
 
   const handleSelectUser = async (name) => {
     setUserMenuAnchor(null);
@@ -82,35 +85,68 @@ export default function Layout({
     }
   };
 
-  const drawerContent = (
-    <Box sx={{ pt: 1 }}>
-      <List>
-        {NAV_ITEMS.map((item) => (
-          <ListItemButton
-            key={item.id}
-            selected={page === item.id}
-            onClick={() => {
-              setPage(item.id);
-              if (isMobile) setSidebarOpen(false);
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: 40, color: page === item.id ? "primary.main" : "text.secondary" }}>
-              {item.icon}
-            </ListItemIcon>
-            <ListItemText
-              primary={item.label}
-              primaryTypographyProps={{
-                fontSize: "0.875rem",
-                fontWeight: page === item.id ? 600 : 400,
-              }}
-            />
-          </ListItemButton>
-        ))}
-      </List>
-    </Box>
+  const renderNavItem = (item) => (
+    <ListItemButton
+      key={item.id}
+      selected={page === item.id}
+      onClick={() => {
+        setPage(item.id);
+        if (isMobile) setSidebarOpen(false);
+      }}
+    >
+      <ListItemIcon sx={{ minWidth: 36, color: page === item.id ? "primary.main" : "text.secondary" }}>
+        {item.icon}
+      </ListItemIcon>
+      <ListItemText
+        primary={item.label}
+        primaryTypographyProps={{
+          fontSize: "0.875rem",
+          fontWeight: page === item.id ? 600 : 400,
+        }}
+      />
+    </ListItemButton>
   );
 
-  const toolbarTop = TITLE_BAR_HEIGHT;
+  const drawerContent = (
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      {/* Sidebar header: logo + wordmark */}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          height: 64,
+          px: 2.5,
+          flexShrink: 0,
+        }}
+      >
+        <img
+          src="/icon.png"
+          alt="G-Attendance"
+          style={{ width: 28, height: 28, borderRadius: 6 }}
+        />
+        <Typography
+          sx={{
+            fontFamily: "'Google Sans', 'Roboto', sans-serif",
+            fontSize: "1.05rem",
+            fontWeight: 600,
+            color: "text.primary",
+            whiteSpace: "nowrap",
+          }}
+        >
+          G-Attendance
+        </Typography>
+      </Box>
+
+      {/* Main nav */}
+      <List sx={{ flex: 1, py: 0 }}>{NAV_ITEMS.map(renderNavItem)}</List>
+
+      {/* Pinned Settings */}
+      <Box sx={{ pb: 1.5, pt: 1, borderTop: "1px solid", borderColor: "divider" }}>
+        <List sx={{ py: 0 }}>{renderNavItem(SETTINGS_ITEM)}</List>
+      </Box>
+    </Box>
+  );
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "background.default" }}>
@@ -136,38 +172,17 @@ export default function Layout({
         elevation={0}
         sx={{
           top: TITLE_BAR_HEIGHT,
+          left: !isMobile && sidebarOpen ? `${DRAWER_WIDTH}px` : 0,
+          width: !isMobile && sidebarOpen ? `calc(100% - ${DRAWER_WIDTH}px)` : "100%",
           bgcolor: "background.paper",
           borderBottom: "1px solid",
           borderColor: "divider",
-          zIndex: (t) => t.zIndex.drawer + 1,
+          transition: "left 225ms cubic-bezier(0, 0, 0.2, 1), width 225ms cubic-bezier(0, 0, 0.2, 1)",
+          zIndex: (t) => t.zIndex.drawer - 1,
         }}
       >
         <Toolbar sx={{ minHeight: "56px !important", gap: 1 }}>
-          {/* App icon + name */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mr: 1, WebkitAppRegion: "no-drag" }}>
-            <img
-              src="/icon.png"
-              alt="G-Attendance"
-              style={{ width: 28, height: 28, borderRadius: 6 }}
-            />
-            <Typography
-              variant="h6"
-              sx={{
-                color: "text.primary",
-                fontSize: "1rem",
-                fontWeight: 600,
-                whiteSpace: "nowrap",
-                display: { xs: "none", sm: "block" },
-              }}
-            >
-              G-Attendance
-            </Typography>
-          </Box>
-
-          {/* Divider */}
-          <Box sx={{ width: 1, height: 24, bgcolor: "divider", mx: 0.5 }} />
-
-          {/* Hamburger + page title */}
+          {/* Sidebar toggle + page title */}
           <IconButton
             onClick={() => setSidebarOpen(!sidebarOpen)}
             sx={{ color: "text.secondary", WebkitAppRegion: "no-drag" }}
@@ -192,7 +207,7 @@ export default function Layout({
           <Box sx={{ flex: 1 }} />
 
           {/* Year navigation */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0, WebkitAppRegion: "no-drag" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, WebkitAppRegion: "no-drag" }}>
             <IconButton
               size="small"
               onClick={() => setYear((y) => Math.max(MIN_YEAR, y - 1))}
@@ -203,12 +218,11 @@ export default function Layout({
             </IconButton>
             <Box
               sx={{
-                px: 2,
+                px: 2.25,
                 py: 0.5,
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: 1,
-                minWidth: 64,
+                bgcolor: "#f1f3f4",
+                borderRadius: 999,
+                minWidth: 72,
                 textAlign: "center",
               }}
             >
@@ -246,7 +260,7 @@ export default function Layout({
               sx={{
                 width: 32,
                 height: 32,
-                bgcolor: "#3c4043",
+                bgcolor: "primary.main",
                 fontSize: "0.8rem",
                 fontWeight: 600,
               }}
@@ -284,7 +298,7 @@ export default function Layout({
                 sx={{ borderRadius: 1, mx: 0.5, gap: 1.5 }}
               >
                 <ListItemAvatar sx={{ minWidth: 0 }}>
-                  <Avatar sx={{ width: 32, height: 32, bgcolor: "#3c4043", fontSize: "0.8rem", fontWeight: 600 }}>
+                  <Avatar sx={{ width: 32, height: 32, bgcolor: "primary.main", fontSize: "0.8rem", fontWeight: 600 }}>
                     {getInitials(name)}
                   </Avatar>
                 </ListItemAvatar>
@@ -318,9 +332,11 @@ export default function Layout({
           flexShrink: 0,
           "& .MuiDrawer-paper": {
             width: DRAWER_WIDTH,
-            top: TITLE_BAR_HEIGHT + 56,
-            bgcolor: "background.default",
-            borderRight: "none",
+            top: TITLE_BAR_HEIGHT,
+            height: `calc(100% - ${TITLE_BAR_HEIGHT}px)`,
+            bgcolor: "background.paper",
+            borderRight: "1px solid",
+            borderColor: "divider",
           },
         }}
       >
@@ -332,11 +348,9 @@ export default function Layout({
         component="main"
         sx={{
           flexGrow: 1,
+          minWidth: 0,
           mt: `${TITLE_BAR_HEIGHT + 56}px`,
           p: 3,
-          ml: !isMobile && sidebarOpen ? `${DRAWER_WIDTH}px` : 0,
-          transition: "margin-left 225ms cubic-bezier(0, 0, 0.2, 1)",
-          width: "100%",
         }}
       >
         <UpdateBanner />

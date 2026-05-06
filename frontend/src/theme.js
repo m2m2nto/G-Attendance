@@ -79,13 +79,16 @@ const theme = createTheme({
     MuiListItemButton: {
       styleOverrides: {
         root: {
-          borderRadius: "0 25px 25px 0",
-          marginRight: 12,
+          borderRadius: 8,
+          marginLeft: 8,
+          marginRight: 8,
+          paddingTop: 8,
+          paddingBottom: 8,
           "&.Mui-selected": {
-            backgroundColor: "#d3e3fd",
-            color: "#001d35",
+            backgroundColor: "#e8f0fe",
+            color: "#1a73e8",
             "&:hover": {
-              backgroundColor: "#c2d9fc",
+              backgroundColor: "#d2e3fc",
             },
           },
         },
