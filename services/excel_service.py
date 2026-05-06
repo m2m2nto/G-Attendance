@@ -10,14 +10,15 @@ def _resolve_data_dir():
     """Resolve the data directory, handling both dev and PyInstaller-frozen modes.
 
     When frozen, the bundled data lives under <app>/Contents/Resources/data/.
-    In dev, it lives under the project root's data/ dir.
+    The PyInstaller --onedir layout puts the executable at
+    <app>/Contents/Resources/backend/app/app, so we walk up three dirnames to
+    reach Resources/.
+    In dev, data lives under the project root's data/ dir.
     """
     if getattr(sys, "frozen", False):
-        # PyInstaller: sys._MEIPASS is the temp extract dir, but data is in Resources
-        # The executable is at <app>/Contents/Resources/backend/app
-        # Data is at <app>/Contents/Resources/data/
-        exe_dir = os.path.dirname(sys.executable)  # .../Resources/backend
-        resources_dir = os.path.dirname(exe_dir)     # .../Resources
+        exe_dir = os.path.dirname(sys.executable)              # .../Resources/backend/app
+        backend_dir = os.path.dirname(exe_dir)                  # .../Resources/backend
+        resources_dir = os.path.dirname(backend_dir)            # .../Resources
         return os.path.join(resources_dir, "data")
     return os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 

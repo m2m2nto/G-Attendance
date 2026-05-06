@@ -38,7 +38,7 @@ The project is also a long-running experiment in AI-agent-driven development: mo
 | Command | Purpose |
 |---|---|
 | `npm run build:frontend` | Vite production build |
-| `npm run build:backend` | PyInstaller one-file bundle of Flask app → `dist-backend/app` |
+| `npm run build:backend` | PyInstaller one-dir bundle of Flask app → `dist-backend/app/` |
 | `npm run electron:build` | Full macOS build: backend + frontend + electron-builder, copies `.app` to repo root |
 
 ### Release flow (post-commit)
@@ -131,7 +131,7 @@ G-Attendance.app          Last built macOS app (kept at repo root for convenienc
 | Bundler | Vite | 6.x |
 | Backend | Flask + flask-cors | 3.1 / 5.0 |
 | Excel I/O | openpyxl | 3.1 |
-| Backend bundling | PyInstaller (one-file) | — |
+| Backend bundling | PyInstaller (one-dir) | — |
 | Desktop bundling | electron-builder | 25.x |
 | Storage | `.xlsx` + `.json` only | — |
 

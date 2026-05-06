@@ -13,12 +13,13 @@ from api.config import config_bp
 def _resolve_frontend_dist():
     """Resolve path to frontend/dist, handling PyInstaller frozen mode.
 
-    In frozen mode, the executable is at <app>/Contents/Resources/backend/app
+    With --onedir, the executable is at <app>/Contents/Resources/backend/app/app
     and frontend/dist is at <app>/Contents/Resources/frontend/dist/.
     """
     if getattr(sys, "frozen", False):
-        exe_dir = os.path.dirname(sys.executable)   # .../Resources/backend
-        resources_dir = os.path.dirname(exe_dir)      # .../Resources
+        exe_dir = os.path.dirname(sys.executable)              # .../Resources/backend/app
+        backend_dir = os.path.dirname(exe_dir)                  # .../Resources/backend
+        resources_dir = os.path.dirname(backend_dir)            # .../Resources
         return os.path.join(resources_dir, "frontend", "dist")
     return os.path.join(os.path.dirname(__file__), "frontend", "dist")
 

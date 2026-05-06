@@ -1,14 +1,14 @@
 {
   "name": "g-attendance",
   "version": "1.0.0",
-  "buildNumber": 2,
+  "buildNumber": 3,
   "private": true,
   "main": "electron/main.js",
   "scripts": {
     "electron:dev": "electron .",
     "electron:build": "npm run build:backend && npm run build:frontend && electron-builder && cp -R dist-electron/mac-arm64/G-Attendance.app ./G-Attendance.app",
     "build:frontend": "cd frontend && npm run build",
-    "build:backend": "pyinstaller --distpath dist-backend --name app --onefile app.py --hidden-import=services --hidden-import=api --hidden-import=api.team --hidden-import=api.leave --hidden-import=api.holidays --hidden-import=api.balances --hidden-import=api.config --hidden-import=services.excel_service"
+    "build:backend": "rm -rf dist-backend build/app && pyinstaller --distpath dist-backend --name app --onedir -y app.py --hidden-import=services --hidden-import=api --hidden-import=api.team --hidden-import=api.leave --hidden-import=api.holidays --hidden-import=api.balances --hidden-import=api.config --hidden-import=services.excel_service"
   },
   "devDependencies": {
     "electron": "^33.0.0",

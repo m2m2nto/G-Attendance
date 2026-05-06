@@ -7,8 +7,8 @@ Local macOS desktop app for managing team vacation, sick leave, and Luxembourg p
 
 ## Tech Stack
 - **Backend**: Python + Flask 3.1 + openpyxl 3.1 (Excel read/write), flask-cors 5
-- **Frontend**: React 18.3 + Material UI 6.4 + Vite 6 + react-router 7 + axios + dayjs + `@mui/x-date-pickers`
-- **Desktop**: Electron 33 + PyInstaller (one-file) + electron-builder 25 (macOS only)
+- **Frontend**: React 18.3 + Material UI 6.4 + Vite 6 + axios + dayjs + `@mui/x-date-pickers` (no router — `App.jsx` state-based nav)
+- **Desktop**: Electron 33 + PyInstaller (one-dir) + electron-builder 25 (macOS only)
 - **Data store**: Excel files + JSON only, no database
 
 ## Key Commands
@@ -28,12 +28,14 @@ api/                      Flask blueprints: team, leave, holidays, balances, con
 services/excel_service.py Single read/write layer over attendance.xlsx
 scripts/import_data.py    Migration
 data/                     attendance.xlsx + app_settings.json
-electron/                 main.js + preload.js
+electron/                 main.js + preload.js + updater.js (auto-update)
 frontend/src/
   components/             Layout, TeamOverview, VacationPage, SickLeavePage,
-                          HolidaysPage, SettingsPage, LeaveDialog, ConfirmDialog
+                          HolidaysPage, SettingsPage, LeaveDialog, ConfirmDialog,
+                          UpdateBanner
   api/client.js           Single axios instance
   theme.js                MUI theme (Gmail-like)
+tests/                    Backend pytest suite (run with `pytest`)
 ```
 
 ## Business Rules
@@ -50,4 +52,4 @@ frontend/src/
 - UI stays Gmail-like / Material Design. No data-science dashboards.
 - After every pushed commit: build `.app`, zip it, publish GitHub Release. Upload `.zip` only — never `.dmg`.
 - Schema changes to `attendance.xlsx`, new deps, or stack swaps require explicit approval.
-- No automated tests yet — include a manual test plan in PR descriptions.
+- Backend `pytest` suite lives in `tests/` — extend it for changes touching business rules, `excel_service`, or leave/balance endpoints. Frontend still manual; include a manual test plan in PR descriptions.

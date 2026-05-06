@@ -13,10 +13,11 @@ const FLASK_PORT = 5001;
 const FLASK_URL = `http://localhost:${FLASK_PORT}`;
 
 function getFlaskPath() {
-  // In packaged app, look for frozen Python executable in resources
+  // In packaged app, the PyInstaller --onedir output lives at
+  // Resources/backend/app/ with the executable at Resources/backend/app/app.
   if (app.isPackaged) {
     const resourcePath = process.resourcesPath;
-    return path.join(resourcePath, "backend", "app");
+    return path.join(resourcePath, "backend", "app", "app");
   }
   return null; // Use python directly in development
 }
