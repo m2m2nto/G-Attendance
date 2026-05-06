@@ -53,8 +53,10 @@ function startFlask() {
       reject(err);
     });
 
-    // Poll until Flask is ready
-    const maxAttempts = 30;
+    // Poll until Flask is ready. Tight interval, no pre-poll sleep —
+    // ~10 s total window at 100 ms granularity.
+    const maxAttempts = 100;
+    const intervalMs = 100;
     let attempts = 0;
     const check = () => {
       attempts++;
@@ -63,20 +65,20 @@ function startFlask() {
           if (res.statusCode === 200) {
             resolve();
           } else if (attempts < maxAttempts) {
-            setTimeout(check, 500);
+            setTimeout(check, intervalMs);
           } else {
             reject(new Error("Flask did not start in time"));
           }
         })
         .on("error", () => {
           if (attempts < maxAttempts) {
-            setTimeout(check, 500);
+            setTimeout(check, intervalMs);
           } else {
             reject(new Error("Flask did not start in time"));
           }
         });
     };
-    setTimeout(check, 1000);
+    check();
   });
 }
 
