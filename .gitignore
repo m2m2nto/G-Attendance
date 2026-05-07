@@ -36,6 +36,7 @@ test-results/
 *.xlsm
 ~$*
 data/
+!tests/fixtures/*.xlsx
 
 # Other
 Banking transactions/
