@@ -29,3 +29,4 @@ mac:
     - dmg
     - dir
   icon: build/icon.icns
+  identity: null
