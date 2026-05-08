@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   downloadUpdate: () => ipcRenderer.invoke("update:download"),
   applyUpdate: () => ipcRenderer.invoke("update:apply"),
   getAppVersion: () => ipcRenderer.invoke("update:get-version"),
+  selectExcelFile: (currentPath) =>
+    ipcRenderer.invoke("file:select-excel", currentPath),
 
   // Listeners (main → renderer)
   onUpdateAvailable: (cb) =>

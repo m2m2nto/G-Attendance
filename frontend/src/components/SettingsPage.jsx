@@ -348,7 +348,14 @@ export default function SettingsPage() {
           <Button
             variant="outlined"
             startIcon={<FolderOpenIcon />}
-            onClick={() => setBrowseOpen(true)}
+            onClick={async () => {
+              if (window.electronAPI?.selectExcelFile) {
+                const picked = await window.electronAPI.selectExcelFile(filePath);
+                if (picked) handleFileSelect(picked);
+              } else {
+                setBrowseOpen(true);
+              }
+            }}
           >
             Change
           </Button>

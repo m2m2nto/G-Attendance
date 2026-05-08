@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const { spawn } = require("child_process");
 const path = require("path");
 const fs = require("fs");
@@ -136,6 +136,20 @@ ipcMain.handle("update:apply", () => {
 });
 
 ipcMain.handle("update:get-version", () => getAppVersion());
+
+ipcMain.handle("file:select-excel", async (_e, currentPath) => {
+  const defaultPath = currentPath
+    ? path.dirname(currentPath)
+    : app.getPath("documents");
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: "Select Excel File",
+    defaultPath,
+    properties: ["openFile"],
+    filters: [{ name: "Excel", extensions: ["xlsx", "xlsm"] }],
+  });
+  if (result.canceled || !result.filePaths?.length) return null;
+  return result.filePaths[0];
+});
 
 // -- App lifecycle ----------------------------------------------------------
 
