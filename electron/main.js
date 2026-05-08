@@ -121,7 +121,10 @@ function getAppVersion() {
 
 ipcMain.handle("update:check", () => {
   if (updater) return updater.checkForUpdates();
-  return null;
+  return {
+    status: "error",
+    message: "Auto-update is only available in packaged builds",
+  };
 });
 
 ipcMain.handle("update:download", () => {

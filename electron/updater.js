@@ -89,14 +89,16 @@ class Updater {
     try {
       const data = await this._httpsGet(RELEASES_URL);
       const release = JSON.parse(data.toString());
+      const localBuild = this._getCurrentBuild();
 
       // Parse buildNumber from tag: v1.0.0-build.14
       const tag = release.tag_name || "";
       const buildMatch = tag.match(/build\.(\d+)/);
-      if (!buildMatch) return null;
+      if (!buildMatch) {
+        return { status: "error", message: "Latest release tag is missing a build number" };
+      }
 
       const remoteBuild = parseInt(buildMatch[1], 10);
-      const localBuild = this._getCurrentBuild();
 
       if (remoteBuild > localBuild) {
         const versionMatch = tag.match(/^v?([\d.]+)/);
@@ -115,13 +117,18 @@ class Updater {
           currentBuild: localBuild,
         });
 
-        return this.latestRelease;
+        return {
+          status: "available",
+          version,
+          buildNumber: remoteBuild,
+          currentBuild: localBuild,
+        };
       }
 
-      return null; // up to date
+      return { status: "up-to-date", currentBuild: localBuild };
     } catch (err) {
       console.error("[updater] Check failed:", err.message);
-      return null;
+      return { status: "error", message: err.message };
     }
   }
 

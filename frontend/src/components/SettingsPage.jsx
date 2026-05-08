@@ -4,6 +4,7 @@ import {
   TableCell, TableContainer, TableHead, TableRow, Snackbar, Alert,
   Dialog, DialogTitle, DialogContent, DialogActions, List,
   ListItemButton, ListItemIcon, ListItemText, Breadcrumbs, Link, Chip,
+  CircularProgress,
 } from "@mui/material";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import SaveIcon from "@mui/icons-material/Save";
@@ -229,6 +230,7 @@ export default function SettingsPage() {
   const [filePath, setFilePath] = useState("");
   const [browseOpen, setBrowseOpen] = useState(false);
   const [appVersion, setAppVersion] = useState({ version: __APP_VERSION__, buildNumber: __APP_BUILD__ });
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   const isElectron = !!window.electronAPI?.getAppVersion;
 
@@ -271,6 +273,30 @@ export default function SettingsPage() {
       carryover_deadline_month: carryover,
     });
     setSnack({ open: true, message: "Settings saved", severity: "success" });
+  };
+
+  const handleCheckForUpdates = async () => {
+    setCheckingUpdate(true);
+    try {
+      const result = await window.electronAPI.checkForUpdates();
+      if (result?.status === "available") {
+        setSnack({
+          open: true,
+          message: `Update available — v${result.version} (build ${result.buildNumber}). See banner above.`,
+          severity: "info",
+        });
+      } else if (result?.status === "up-to-date") {
+        setSnack({ open: true, message: "You're on the latest version.", severity: "success" });
+      } else {
+        setSnack({
+          open: true,
+          message: result?.message || "Could not check for updates.",
+          severity: "error",
+        });
+      }
+    } finally {
+      setCheckingUpdate(false);
+    }
   };
 
   const handleAddMember = async (name, startYear) => {
@@ -436,11 +462,16 @@ export default function SettingsPage() {
             <Button
               variant="text"
               size="small"
-              startIcon={<SystemUpdateIcon />}
-              onClick={() => window.electronAPI.checkForUpdates()}
+              startIcon={
+                checkingUpdate
+                  ? <CircularProgress size={16} thickness={5} />
+                  : <SystemUpdateIcon />
+              }
+              onClick={handleCheckForUpdates}
+              disabled={checkingUpdate}
               sx={{ textTransform: "none" }}
             >
-              Check for updates
+              {checkingUpdate ? "Checking…" : "Check for updates"}
             </Button>
           )}
         </Box>
