@@ -8,7 +8,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import { PickersDay } from "@mui/x-date-pickers/PickersDay";
 import dayjs from "dayjs";
-import { getLeave } from "../api/client";
+import { getLeave, getHolidays } from "../api/client";
 
 function SelectedDay(props) {
   const { day, selectedDates, existingDates, ...other } = props;
@@ -52,6 +52,8 @@ export default function LeaveDialog({ open, onClose, onSave, entry, team, year, 
   const [name, setName] = useState("");
   const [selectedDates, setSelectedDates] = useState({});
   const [existingDates, setExistingDates] = useState({});
+  const [holidays, setHolidays] = useState(() => new Set());
+  const [anchor, setAnchor] = useState(null);
   const [calendarMonth, setCalendarMonth] = useState(dayjs().year(year).month(new Date().getMonth()));
 
   const isEdit = !!entry && !!entry.month;
@@ -104,8 +106,19 @@ export default function LeaveDialog({ open, onClose, onSave, entry, team, year, 
     }
   }, [year, isEdit, entry]);
 
+  // Load this year's public holidays so range fill can skip them
+  useEffect(() => {
+    if (!open || !year) return;
+    let cancelled = false;
+    getHolidays({ year })
+      .then((list) => { if (!cancelled) setHolidays(new Set(list.map((h) => h.date))); })
+      .catch(() => { if (!cancelled) setHolidays(new Set()); });
+    return () => { cancelled = true; };
+  }, [open, year]);
+
   useEffect(() => {
     if (!open) return;
+    setAnchor(null);
     if (entry && entry.month) {
       setName(entry.name || "");
       setCalendarMonth(dayjs().year(year).month(entry.month - 1));
@@ -135,25 +148,51 @@ export default function LeaveDialog({ open, onClose, onSave, entry, team, year, 
   const handleNameChange = (newName) => {
     setName(newName);
     setSelectedDates({});
+    setAnchor(null);
     loadExisting(newName);
   };
+
+  const isWorkingDay = useCallback((d) => {
+    const dow = d.day();
+    if (dow === 0 || dow === 6) return false;
+    return !holidays.has(d.format("YYYY-MM-DD"));
+  }, [holidays]);
 
   const handleDayClick = (date) => {
     const key = date.format("YYYY-MM-DD");
     if (existingDates[key]) return; // Already taken — don't allow selection
-    setSelectedDates((prev) => {
-      const next = { ...prev };
-      if (next[key]) {
-        if (!next[key].half) {
-          next[key] = { half: true };
-        } else {
-          delete next[key];
+
+    // Re-clicking a selected date cycles it: full -> half -> removed.
+    if (selectedDates[key]) {
+      const next = { ...selectedDates };
+      if (!next[key].half) next[key] = { half: true };
+      else delete next[key];
+      setSelectedDates(next);
+      setAnchor(null);
+      return;
+    }
+
+    // A fresh click while a single anchor day is set fills the range between them.
+    if (anchor && selectedDates[anchor]) {
+      const next = { ...selectedDates };
+      const anchorFirst = anchor < key;
+      let d = dayjs(anchorFirst ? anchor : key);
+      const end = dayjs(anchorFirst ? key : anchor);
+      while (d.isBefore(end) || d.isSame(end, "day")) {
+        const k = d.format("YYYY-MM-DD");
+        if (isWorkingDay(d) && !next[k] && !existingDates[k]) {
+          next[k] = { half: false };
         }
-      } else {
-        next[key] = { half: false };
+        d = d.add(1, "day");
       }
-      return next;
-    });
+      setSelectedDates(next);
+      setAnchor(null);
+      return;
+    }
+
+    // First click of a potential range — select the day and remember it as the anchor.
+    setSelectedDates({ ...selectedDates, [key]: { half: false } });
+    setAnchor(key);
   };
 
   const sortedDates = useMemo(
@@ -233,9 +272,12 @@ export default function LeaveDialog({ open, onClose, onSave, entry, team, year, 
             </Box>
 
             <Box sx={{ mx: 1 }}>
-              <Box sx={{ display: "flex", gap: 2, mb: 1 }}>
+              <Box sx={{ display: "flex", flexDirection: "column", mb: 1 }}>
                 <Typography variant="caption" color="text.secondary">
-                  Click: full day &bull; Again: half day &bull; Again: deselect
+                  Click a date to select it &bull; click again for a half day (½) &bull; once more to remove
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Click two dates to fill the working days between them (weekends and holidays skipped)
                 </Typography>
               </Box>
               {hasExisting && (
