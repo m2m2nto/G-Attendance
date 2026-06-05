@@ -26,7 +26,6 @@ extraResources:
 mac:
   category: public.app-category.business
   target:
-    - dmg
     - dir
   icon: build/icon.icns
   identity: null
