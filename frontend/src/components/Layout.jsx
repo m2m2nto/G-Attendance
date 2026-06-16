@@ -3,9 +3,11 @@ import {
   AppBar, Toolbar, Typography, Drawer, List, ListItemButton, ListItemIcon,
   ListItemText, Box, IconButton, Avatar, Menu, MenuItem, ListItemAvatar,
   Divider, Dialog, DialogTitle, DialogContent, DialogActions, TextField,
-  Button, useMediaQuery, useTheme,
+  Button, useMediaQuery, useTheme, InputBase,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import SearchIcon from "@mui/icons-material/Search";
+import CloseIcon from "@mui/icons-material/Close";
 import GroupIcon from "@mui/icons-material/Group";
 import BeachAccessIcon from "@mui/icons-material/BeachAccess";
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
@@ -42,7 +44,7 @@ function getInitials(name) {
 }
 
 export default function Layout({
-  page, setPage, year, setYear, children,
+  page, setPage, year, setYear, search, setSearch, children,
   appUsers, setAppUsers, currentUser, setCurrentUser,
 }) {
   const theme = useTheme();
@@ -203,8 +205,41 @@ export default function Layout({
             {currentPageLabel}
           </Typography>
 
-          {/* Spacer */}
-          <Box sx={{ flex: 1 }} />
+          {/* Universal search */}
+          <Box sx={{ flex: 1, display: "flex", justifyContent: "center", px: { xs: 1, sm: 2 } }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                width: "100%",
+                maxWidth: 560,
+                bgcolor: "#f1f3f4",
+                borderRadius: 999,
+                px: 1.5,
+                height: 40,
+                WebkitAppRegion: "no-drag",
+                transition: "background-color 150ms, box-shadow 150ms",
+                "&:focus-within": {
+                  bgcolor: "background.paper",
+                  boxShadow: "0 1px 6px rgba(32,33,36,0.28)",
+                },
+              }}
+            >
+              <SearchIcon sx={{ color: "text.secondary", fontSize: 20, mr: 1 }} />
+              <InputBase
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={`Search ${currentPageLabel || "this page"}`}
+                sx={{ flex: 1, fontSize: "0.9rem", color: "text.primary" }}
+                inputProps={{ "aria-label": "search" }}
+              />
+              {search && (
+                <IconButton size="small" onClick={() => setSearch("")} sx={{ color: "text.secondary" }}>
+                  <CloseIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              )}
+            </Box>
+          </Box>
 
           {/* Year navigation */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, WebkitAppRegion: "no-drag" }}>
