@@ -82,7 +82,7 @@ function isWeekend(dateStr) {
   }
 }
 
-export default function HolidaysPage({ year }) {
+export default function HolidaysPage({ year, search = "" }) {
   const [holidays, setHolidays] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editEntry, setEditEntry] = useState(null);
@@ -122,6 +122,13 @@ export default function HolidaysPage({ year }) {
 
   const weekendCount = holidays.filter((h) => isWeekend(h.date)).length;
 
+  const q = search.trim().toLowerCase();
+  const visibleHolidays = q
+    ? holidays.filter((h) =>
+        [h.name, h.date, getDayOfWeek(h.date)]
+          .some((v) => (v || "").toLowerCase().includes(q)))
+    : holidays;
+
   return (
     <Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
@@ -147,14 +154,14 @@ export default function HolidaysPage({ year }) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {holidays.length === 0 ? (
+            {visibleHolidays.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} align="center" sx={{ py: 4, color: "text.secondary" }}>
-                  No holidays for {year}
+                  No holidays{q ? " matching search" : ""} for {year}
                 </TableCell>
               </TableRow>
             ) : (
-              holidays.map((h) => {
+              visibleHolidays.map((h) => {
                 const weekend = isWeekend(h.date);
                 return (
                   <TableRow

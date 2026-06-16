@@ -16,7 +16,7 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-export default function SickLeavePage({ year, onDataChange }) {
+export default function SickLeavePage({ year, onDataChange, search = "" }) {
   const [entries, setEntries] = useState([]);
   const [team, setTeam] = useState([]);
   const [filterName, setFilterName] = useState("all");
@@ -64,6 +64,13 @@ export default function SickLeavePage({ year, onDataChange }) {
     onDataChange?.();
   };
 
+  const q = search.trim().toLowerCase();
+  const visibleEntries = q
+    ? entries.filter((e) =>
+        [e.name, MONTHS[e.month], e.dates_detail, String(e.days_count)]
+          .some((v) => (v || "").toLowerCase().includes(q)))
+    : entries;
+
   return (
     <Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
@@ -93,14 +100,14 @@ export default function SickLeavePage({ year, onDataChange }) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {entries.length === 0 ? (
+            {visibleEntries.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} align="center" sx={{ py: 4, color: "text.secondary" }}>
-                  No sick leave entries for {year}
+                  No sick leave entries{q ? " matching search" : ""} for {year}
                 </TableCell>
               </TableRow>
             ) : (
-              entries.map((e) => (
+              visibleEntries.map((e) => (
                 <TableRow
                   key={`${e.name}-${e.month}`}
                   hover

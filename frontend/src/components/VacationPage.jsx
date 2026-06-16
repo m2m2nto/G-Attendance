@@ -90,7 +90,7 @@ function getComparator(order, orderBy) {
     : (a, b) => -descendingComparator(a, b, orderBy);
 }
 
-export default function VacationPage({ year, onDataChange }) {
+export default function VacationPage({ year, onDataChange, search = "" }) {
   const [entries, setEntries] = useState([]);
   const [team, setTeam] = useState([]);
   const [filterName, setFilterName] = useState("all");
@@ -120,10 +120,15 @@ export default function VacationPage({ year, onDataChange }) {
     setOrderBy(columnId);
   };
 
-  const sortedEntries = useMemo(
-    () => [...entries].sort(getComparator(order, orderBy)),
-    [entries, order, orderBy],
-  );
+  const sortedEntries = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const filtered = q
+      ? entries.filter((e) =>
+          [e.name, MONTHS[e.month], e.dates_detail, String(e.days_count)]
+            .some((v) => (v || "").toLowerCase().includes(q)))
+      : entries;
+    return [...filtered].sort(getComparator(order, orderBy));
+  }, [entries, order, orderBy, search]);
 
   const handleSave = async (entries) => {
     try {
@@ -221,7 +226,7 @@ export default function VacationPage({ year, onDataChange }) {
             {sortedEntries.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={COLUMNS.length + 1} align="center" sx={{ py: 4, color: "text.secondary" }}>
-                  No vacation entries{filterName !== "all" || filterMonth !== "all" ? " matching filters" : ""} for {year}
+                  No vacation entries{filterName !== "all" || filterMonth !== "all" || search.trim() ? " matching filters" : ""} for {year}
                 </TableCell>
               </TableRow>
             ) : (

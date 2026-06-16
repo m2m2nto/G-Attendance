@@ -219,7 +219,7 @@ function AddMemberDialog({ open, onClose, onSave }) {
 // Settings Page
 // ---------------------------------------------------------------------------
 
-export default function SettingsPage() {
+export default function SettingsPage({ search = "" }) {
   const [config, setConfig] = useState({});
   const [team, setTeam] = useState([]);
   const [baseDays, setBaseDays] = useState("");
@@ -316,6 +316,9 @@ export default function SettingsPage() {
   ];
 
   const fileName = filePath ? filePath.split("/").pop() : "No file selected";
+
+  const q = search.trim().toLowerCase();
+  const visibleTeam = q ? team.filter((m) => m.name.toLowerCase().includes(q)) : team;
 
   return (
     <Box>
@@ -428,7 +431,13 @@ export default function SettingsPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {team.map((m) => (
+              {visibleTeam.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} align="center" sx={{ py: 3, color: "text.secondary" }}>
+                    No team members matching “{search}”
+                  </TableCell>
+                </TableRow>
+              ) : visibleTeam.map((m) => (
                 <TableRow key={m.name} hover>
                   <TableCell>
                     <Typography variant="body2" fontWeight={500}>{m.name}</Typography>

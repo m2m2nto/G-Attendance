@@ -1,9 +1,31 @@
 import json
 import os
+import re
 import sys
 import threading
 from datetime import datetime
 from openpyxl import load_workbook
+
+_DATE_PREFIX_RE = re.compile(r"^\d{4}-\d{2}-\d{2}")
+
+
+def _looks_like_holiday_date(value):
+    """True if a Summary-sheet col-A cell holds a holiday date.
+
+    Holiday rows store either a real datetime (existing data) or a
+    "YYYY-MM-DD" string (rows we add). Footer label rows like
+    "# holidays in the weekend:" must NOT be mistaken for holidays.
+    """
+    if isinstance(value, datetime):
+        return True
+    return isinstance(value, str) and bool(_DATE_PREFIX_RE.match(value.strip()))
+
+
+def _weekday_abbr(date_str):
+    try:
+        return datetime.strptime(str(date_str)[:10], "%Y-%m-%d").strftime("%a")
+    except (ValueError, TypeError):
+        return ""
 
 
 def _resolve_data_dir():
@@ -305,7 +327,9 @@ def get_holidays(year=None):
         for row in ws.iter_rows(min_row=4, values_only=True):
             date_val = row[0] if len(row) > 0 else None
             holiday_name = row[2] if len(row) > 2 else None
-            if date_val is None or holiday_name is None:
+            # Stop at the end of the holiday block — a blank row or a footer
+            # label (e.g. "# holidays in the weekend:") is not a holiday.
+            if not _looks_like_holiday_date(date_val) or holiday_name is None:
                 break
             if isinstance(date_val, datetime):
                 date_str = date_val.strftime("%Y-%m-%d")
@@ -332,16 +356,25 @@ def add_holiday(date, name, year):
             wb.close()
             raise ValueError(f"No Summary sheet for year {year}")
         ws = wb[sheet_name]
-        # Find first empty row in the holidays section (col A, starting row 4)
-        insert_row = None
-        for r in range(4, ws.max_row + 2):
-            if ws.cell(row=r, column=1).value is None:
-                insert_row = r
+        # The holiday block is the contiguous run of date rows from row 4.
+        # Insert right after the last one, shifting the footer label rows
+        # (cols A-C only — same as delete_holiday) down to make room. This
+        # keeps the "# holidays in the weekend:" footer from being read as a
+        # holiday and avoids landing the new row below the footer.
+        last_holiday_row = 3  # header row
+        for r in range(4, ws.max_row + 1):
+            if _looks_like_holiday_date(ws.cell(row=r, column=1).value):
+                last_holiday_row = r
+            else:
                 break
-        if insert_row is None:
-            insert_row = ws.max_row + 1
+        insert_row = last_holiday_row + 1
+        # Assign via .value (not the cell(value=...) kwarg, which leaves a cell
+        # untouched when the source is None) so blank rows shift correctly too.
+        for r in range(ws.max_row, insert_row - 1, -1):
+            for col in range(1, 4):
+                ws.cell(row=r + 1, column=col).value = ws.cell(row=r, column=col).value
         ws.cell(row=insert_row, column=1, value=date)
-        ws.cell(row=insert_row, column=2, value="")  # Day name — will be set manually
+        ws.cell(row=insert_row, column=2, value=_weekday_abbr(date))
         ws.cell(row=insert_row, column=3, value=name)
         _save(wb)
     return {"date": date, "name": name, "year": year}
@@ -378,12 +411,13 @@ def delete_holiday(date, year):
     with _lock:
         wb = _open_for_write()
         ws = wb[sheet_name]
-        # Find the row to delete
+        # Find the row to delete, scanning only the holiday block so the
+        # shift below never disturbs the footer label rows.
         delete_row = None
         last_holiday_row = 3  # header row
         for r in range(4, ws.max_row + 1):
             cell_date = ws.cell(row=r, column=1).value
-            if cell_date is None:
+            if not _looks_like_holiday_date(cell_date):
                 break
             last_holiday_row = r
             if isinstance(cell_date, datetime):
@@ -397,13 +431,14 @@ def delete_holiday(date, year):
             wb.close()
             return
 
-        # Shift subsequent holiday rows up to close the gap
+        # Shift subsequent holiday rows up to close the gap. Assign via .value
+        # so a blank source cell actually clears the destination.
         for r in range(delete_row, last_holiday_row):
             for col in range(1, 4):
-                ws.cell(row=r, column=col, value=ws.cell(row=r + 1, column=col).value)
+                ws.cell(row=r, column=col).value = ws.cell(row=r + 1, column=col).value
         # Clear the last row
         for col in range(1, 4):
-            ws.cell(row=last_holiday_row, column=col, value=None)
+            ws.cell(row=last_holiday_row, column=col).value = None
         _save(wb)
 
 

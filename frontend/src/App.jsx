@@ -23,6 +23,13 @@ export default function App() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [appUsers, setAppUsers] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [search, setSearch] = useState("");
+
+  // Clear the universal search when switching pages — a query is scoped to one view.
+  const changePage = useCallback((next) => {
+    setSearch("");
+    setPage(next);
+  }, []);
 
   const triggerRefresh = useCallback(() => {
     setRefreshKey((k) => k + 1);
@@ -42,9 +49,11 @@ export default function App() {
       <CssBaseline />
       <Layout
         page={page}
-        setPage={setPage}
+        setPage={changePage}
         year={year}
         setYear={setYear}
+        search={search}
+        setSearch={setSearch}
         appUsers={appUsers}
         setAppUsers={setAppUsers}
         currentUser={currentUser}
@@ -55,6 +64,7 @@ export default function App() {
           key={`${page}-${year}-${refreshKey}`}
           onDataChange={triggerRefresh}
           currentUser={currentUser}
+          search={search}
         />
       </Layout>
     </ThemeProvider>
