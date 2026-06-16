@@ -44,6 +44,27 @@ def test_get_vacation_returns_posted_entry(flask_client):
     assert entry["days_count"] == 1
 
 
+def test_add_vacation_creates_missing_year_sheet(flask_client):
+    """Adding leave for a year with no person sheet auto-creates it and persists.
+
+    Reproduces the 'insert does nothing' bug when planning next-year vacation:
+    the fixture only has 2025/2026 sheets, so 2027 has no 'Alice 27' sheet.
+    """
+    resp = flask_client.post("/api/leave/vacation", json={
+        "name": "Alice",
+        "year": 2027,
+        "month": 7,
+        "days_count": 2,
+        "dates_detail": "13, 14",
+    })
+    assert resp.status_code == 201
+    listed = flask_client.get("/api/leave/vacation?year=2027&name=Alice").get_json()
+    entry = [e for e in listed if e["month"] == 7]
+    assert len(entry) == 1
+    assert entry[0]["days_count"] == 2
+    assert entry[0]["dates_detail"] == "13, 14"
+
+
 def test_invalid_leave_type_returns_400(flask_client):
     resp = flask_client.get("/api/leave/bogus_type")
     assert resp.status_code == 400

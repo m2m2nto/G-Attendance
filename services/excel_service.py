@@ -268,6 +268,25 @@ def get_team():
     return list(members.values())
 
 
+def _create_person_sheet(wb, sheet_name):
+    """Create a person's year sheet with the standard month layout."""
+    ws = wb.create_sheet(sheet_name)
+    # Headers
+    ws.cell(row=1, column=1, value="Mesi")
+    ws.cell(row=1, column=2, value="Ferie")
+    ws.cell(row=1, column=3, value="Giorni ferie")
+    ws.cell(row=1, column=4, value="Malattia")
+    ws.cell(row=1, column=5, value="Giorni malattia")
+    # Month rows
+    for i, month_name in enumerate(_MONTH_NAMES_IT):
+        ws.cell(row=i + 2, column=1, value=month_name)
+    # Totale row with SUM formulas
+    ws.cell(row=14, column=1, value="Totale")
+    ws.cell(row=14, column=2, value="=SUM(B2:B13)")
+    ws.cell(row=14, column=4, value="=SUM(D2:D13)")
+    return ws
+
+
 def add_team_member(name, start_year):
     """Create sheets for a new team member for the given year."""
     suffix = _year_suffix(start_year)
@@ -277,20 +296,7 @@ def add_team_member(name, start_year):
         if sheet_name in wb.sheetnames:
             wb.close()
             raise ValueError(f"Sheet '{sheet_name}' already exists")
-        ws = wb.create_sheet(sheet_name)
-        # Headers
-        ws.cell(row=1, column=1, value="Mesi")
-        ws.cell(row=1, column=2, value="Ferie")
-        ws.cell(row=1, column=3, value="Giorni ferie")
-        ws.cell(row=1, column=4, value="Malattia")
-        ws.cell(row=1, column=5, value="Giorni malattia")
-        # Month rows
-        for i, month_name in enumerate(_MONTH_NAMES_IT):
-            ws.cell(row=i + 2, column=1, value=month_name)
-        # Totale row with SUM formulas
-        ws.cell(row=14, column=1, value="Totale")
-        ws.cell(row=14, column=2, value="=SUM(B2:B13)")
-        ws.cell(row=14, column=4, value="=SUM(D2:D13)")
+        _create_person_sheet(wb, sheet_name)
         _save(wb)
     return {"name": name, "start_year": start_year, "end_year": None}
 
@@ -527,10 +533,12 @@ def add_leave(leave_type, name, year, month, days_count, dates_detail):
 
     with _lock:
         wb = _open_for_write()
+        # Create the person's sheet on demand — e.g. adding leave for a year
+        # the team member doesn't have a sheet for yet (next-year planning).
         if sheet_name not in wb.sheetnames:
-            wb.close()
-            raise ValueError(f"No sheet found for {name} in {year}")
-        ws = wb[sheet_name]
+            ws = _create_person_sheet(wb, sheet_name)
+        else:
+            ws = wb[sheet_name]
         existing_count = _parse_days_count(ws.cell(row=row, column=count_col).value)
         existing_detail = ws.cell(row=row, column=detail_col).value
 
