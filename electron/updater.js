@@ -192,8 +192,10 @@ class Updater {
                 });
               });
               res.on("end", () => {
-                file.end();
-                resolve();
+                // Resolve only after the file is fully flushed to disk;
+                // extracting a partially-written zip makes ditto silently
+                // fall back to streaming mode, which flattens symlinks.
+                file.end(() => resolve());
               });
               res.on("error", (err) => {
                 file.end();
@@ -204,6 +206,16 @@ class Updater {
         };
         doDownload(downloadUrl);
       });
+
+      // Guard against a truncated download: ditto exits 0 on a corrupt zip
+      // and extracts a broken app, so verify the size before extracting.
+      const actualSize = fs.statSync(zipPath).size;
+      if (totalBytes > 0 && actualSize !== totalBytes) {
+        this._send("update:error", {
+          message: `Downloaded ZIP is incomplete (${actualSize} of ${totalBytes} bytes)`,
+        });
+        return;
+      }
 
       // Extract with ditto (macOS, preserves permissions and code signatures)
       const extractDir = path.join(tmpDir, "extracted");
@@ -259,8 +271,17 @@ class Updater {
     const appName = path.basename(currentAppPath);
     const parentDir = path.dirname(currentAppPath);
 
+    // Carry the live data files over to the new app before swapping,
+    // otherwise every update resets data/ to the build-time copy.
+    const dataDir = path.join(currentAppPath, "Contents", "Resources", "data");
+    const newDataDir = path.join(newAppPath, "Contents", "Resources", "data");
+
     const script = `
       sleep 1
+      if [ -d "${dataDir}" ]; then
+        mkdir -p "${newDataDir}"
+        cp -Rp "${dataDir}/" "${newDataDir}/"
+      fi
       rm -rf "${currentAppPath}"
       mv "${newAppPath}" "${path.join(parentDir, appName)}"
       open "${path.join(parentDir, appName)}"
