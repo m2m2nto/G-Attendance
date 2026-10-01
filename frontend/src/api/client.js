@@ -18,6 +18,14 @@ export const updateLeave = (type, name, year, month, data) =>
 export const deleteLeave = (type, name, year, month) =>
   api.delete(`/leave/${type}/${name}/${year}/${month}`);
 
+// Sick leave documents (link-only attachments, each with a "sent to fiduciaire" flag)
+const sickDocUrl = (e) => `/leave/sick_leave/${e.name}/${e.year}/${e.month}`;
+export const selectSickLeaveAttachments = (e) => api.post(`${sickDocUrl(e)}/attachment/select`).then((r) => r.data);
+export const openSickLeaveAttachment = (e, path) => api.post(`${sickDocUrl(e)}/attachment/open`, { path }).then((r) => r.data);
+export const removeSickLeaveAttachment = (e, path) =>
+  api.delete(`${sickDocUrl(e)}/attachment`, { data: { path } }).then((r) => r.data);
+export const setSickLeaveSent = (e, path, sent) => api.put(`${sickDocUrl(e)}/fiduciaire`, { path, sent }).then((r) => r.data);
+
 // Holidays
 export const getHolidays = (params) => api.get("/holidays", { params }).then((r) => r.data);
 export const addHolidayEntry = (data) => api.post("/holidays", data).then((r) => r.data);

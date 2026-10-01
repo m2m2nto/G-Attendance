@@ -7,7 +7,14 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { getLeave, addLeave, updateLeave, deleteLeave, getTeam } from "../api/client";
+import AttachFileIcon from "@mui/icons-material/AttachFile";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import CheckIcon from "@mui/icons-material/Check";
+import {
+  getLeave, addLeave, updateLeave, deleteLeave, getTeam,
+  selectSickLeaveAttachments, openSickLeaveAttachment, removeSickLeaveAttachment, setSickLeaveSent,
+} from "../api/client";
 import LeaveDialog from "./LeaveDialog";
 import ConfirmDialog from "./ConfirmDialog";
 
@@ -64,10 +71,22 @@ export default function SickLeavePage({ year, onDataChange, search = "" }) {
     onDataChange?.();
   };
 
+  // Run a document action (attach / open / unlink / mark sent), then refresh.
+  const docAction = async (action, successMessage) => {
+    try {
+      const result = await action();
+      const message = successMessage?.(result);
+      if (message) setSnack({ open: true, message, severity: "success" });
+      load();
+    } catch (err) {
+      setSnack({ open: true, message: err.response?.data?.error || "Error updating document", severity: "error" });
+    }
+  };
+
   const q = search.trim().toLowerCase();
   const visibleEntries = q
     ? entries.filter((e) =>
-        [e.name, MONTHS[e.month], e.dates_detail, String(e.days_count)]
+        [e.name, MONTHS[e.month], e.dates_detail, String(e.days_count), ...e.attachments.map((a) => a.file_name)]
           .some((v) => (v || "").toLowerCase().includes(q)))
     : entries;
 
@@ -96,13 +115,14 @@ export default function SickLeavePage({ year, onDataChange, search = "" }) {
               <TableCell>Month</TableCell>
               <TableCell align="right">Days</TableCell>
               <TableCell>Date Details</TableCell>
+              <TableCell>Documents</TableCell>
               <TableCell align="right" width={100}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {visibleEntries.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 4, color: "text.secondary" }}>
+                <TableCell colSpan={6} align="center" sx={{ py: 4, color: "text.secondary" }}>
                   No sick leave entries{q ? " matching search" : ""} for {year}
                 </TableCell>
               </TableRow>
@@ -126,6 +146,50 @@ export default function SickLeavePage({ year, onDataChange, search = "" }) {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" color="text.secondary">{e.dates_detail}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 0.5 }}>
+                      {e.attachments.map((a) => (
+                        <Box key={a.path} sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                          <Tooltip title={a.missing ? `File missing: ${a.path}` : `Open ${a.path}`}>
+                            <Chip
+                              size="small"
+                              icon={a.missing ? <WarningAmberIcon /> : <VisibilityIcon />}
+                              label={a.missing ? `Missing: ${a.file_name}` : a.file_name}
+                              color={a.missing ? "error" : "primary"}
+                              variant="outlined"
+                              onClick={() => docAction(() => openSickLeaveAttachment(e, a.path))}
+                              onDelete={() => docAction(() => removeSickLeaveAttachment(e, a.path))}
+                              sx={{ maxWidth: 220 }}
+                            />
+                          </Tooltip>
+                          <Tooltip title={a.sent_to_fiduciaire ? "Sent to the fiduciaire — click to undo" : "Click to mark as sent to the fiduciaire"}>
+                            <Chip
+                              size="small"
+                              icon={a.sent_to_fiduciaire ? <CheckIcon /> : undefined}
+                              label={a.sent_to_fiduciaire ? "Sent" : "Not sent"}
+                              color={a.sent_to_fiduciaire ? "success" : "default"}
+                              variant={a.sent_to_fiduciaire ? "filled" : "outlined"}
+                              onClick={() => docAction(() => setSickLeaveSent(e, a.path, !a.sent_to_fiduciaire))}
+                              sx={a.sent_to_fiduciaire ? undefined : { color: "text.secondary" }}
+                            />
+                          </Tooltip>
+                        </Box>
+                      ))}
+                      <Tooltip title="Link one or more sick leave documents (files are not copied)">
+                        <Chip
+                          size="small"
+                          icon={<AttachFileIcon />}
+                          label="Attach"
+                          variant="outlined"
+                          onClick={() => docAction(
+                            () => selectSickLeaveAttachments(e),
+                            (r) => r.added.length > 0 && `Linked ${r.added.join(", ")}`,
+                          )}
+                          sx={{ color: "text.secondary" }}
+                        />
+                      </Tooltip>
+                    </Box>
                   </TableCell>
                   <TableCell align="right">
                     <Tooltip title="Edit">

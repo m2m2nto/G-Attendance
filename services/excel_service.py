@@ -485,6 +485,7 @@ def get_leave(leave_type, year=None, name=None, month=None):
     count_col, detail_col = _get_leave_col(leave_type)
     results = []
     years_to_check = [year] if year else _available_years()
+    sick_docs = _load_settings().get("sick_leave_docs", {}) if leave_type == "sick_leave" else None
 
     for y in years_to_check:
         suffix = _year_suffix(y)
@@ -518,6 +519,8 @@ def get_leave(leave_type, year=None, name=None, month=None):
                         "dates_detail": str(detail_val) if detail_val else "",
                         "updated_at": _get_leave_timestamp(leave_type, person, y, m),
                     })
+                    if sick_docs is not None:
+                        results[-1]["attachments"] = _annotate_sick_files(sick_docs.get(_sick_doc_key(person, y, m)))
     wb.close()
     return results
 
@@ -602,6 +605,89 @@ def delete_leave(leave_type, name, year, month):
         ws.cell(row=row, column=count_col).value = None
         ws.cell(row=row, column=detail_col).value = None
         _save(wb)
+
+    if leave_type == "sick_leave":
+        settings = _load_settings()
+        if settings.get("sick_leave_docs", {}).pop(_sick_doc_key(name, year, month), None) is not None:
+            _save_settings(settings)
+
+
+# ---------------------------------------------------------------------------
+# Sick leave documents — "link only" attachments (medical certificates), any
+# number per sick leave entry, each with its own "sent to fiduciaire" flag.
+# We store the absolute path of each file the user picks and never copy, move,
+# rename, or delete it. Lives in app_settings.json under "sick_leave_docs",
+# keyed by person|year|month (same identity as the entry itself); the value is
+# a list of {"path", "sent_to_fiduciaire"}.
+# ---------------------------------------------------------------------------
+
+def _sick_doc_key(name, year, month):
+    return f"{name}|{year}|{month}"
+
+
+def _annotate_sick_files(files):
+    return [
+        {
+            "path": f["path"],
+            "file_name": os.path.basename(f["path"]),
+            "missing": not os.path.exists(f["path"]),
+            "sent_to_fiduciaire": bool(f.get("sent_to_fiduciaire")),
+        }
+        for f in files or []
+    ]
+
+
+def get_sick_leave_attachments(name, year, month):
+    """Linked files for one sick leave entry."""
+    docs = _load_settings().get("sick_leave_docs", {})
+    return _annotate_sick_files(docs.get(_sick_doc_key(name, year, month)))
+
+
+def _save_sick_files(settings, name, year, month, files):
+    docs = settings.setdefault("sick_leave_docs", {})
+    key = _sick_doc_key(name, year, month)
+    if files:
+        docs[key] = files
+    else:
+        docs.pop(key, None)
+    _save_settings(settings)
+    return _annotate_sick_files(files)
+
+
+def add_sick_leave_attachments(name, year, month, paths):
+    """Link file paths to a sick leave entry (no copy/rename).
+
+    Only an existing entry can carry documents. A path already linked to the
+    entry is left as is.
+    """
+    if not get_leave("sick_leave", year=year, name=name, month=month):
+        raise ValueError(f"No sick leave entry for {name} in {month}/{year}")
+    settings = _load_settings()
+    files = list(settings.get("sick_leave_docs", {}).get(_sick_doc_key(name, year, month), []))
+    linked = {f["path"] for f in files}
+    for path in paths:
+        if path not in linked:
+            files.append({"path": path, "sent_to_fiduciaire": False})
+            linked.add(path)
+    return _save_sick_files(settings, name, year, month, files)
+
+
+def remove_sick_leave_attachment(name, year, month, path):
+    """Remove one link (never touches the actual file)."""
+    settings = _load_settings()
+    files = settings.get("sick_leave_docs", {}).get(_sick_doc_key(name, year, month), [])
+    return _save_sick_files(settings, name, year, month, [f for f in files if f["path"] != path])
+
+
+def set_sick_leave_sent(name, year, month, path, sent):
+    """Mark whether one linked document was sent to the fiduciaire."""
+    settings = _load_settings()
+    files = settings.get("sick_leave_docs", {}).get(_sick_doc_key(name, year, month), [])
+    match = [f for f in files if f["path"] == path]
+    if not match:
+        raise ValueError("This file is not linked to this sick leave")
+    match[0]["sent_to_fiduciaire"] = bool(sent)
+    return _save_sick_files(settings, name, year, month, files)
 
 
 # ---------------------------------------------------------------------------
