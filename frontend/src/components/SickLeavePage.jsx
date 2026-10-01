@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead,
   TableRow, Paper, Fab, IconButton, Snackbar, Alert, Chip, FormControl,
-  InputLabel, Select, MenuItem, Tooltip,
+  InputLabel, Select, MenuItem, Tooltip, Checkbox,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
@@ -10,7 +10,6 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
-import CheckIcon from "@mui/icons-material/Check";
 import {
   getLeave, addLeave, updateLeave, deleteLeave, getTeam,
   selectSickLeaveAttachments, openSickLeaveAttachment, removeSickLeaveAttachment, setSickLeaveSent,
@@ -116,13 +115,14 @@ export default function SickLeavePage({ year, onDataChange, search = "" }) {
               <TableCell align="right">Days</TableCell>
               <TableCell>Date Details</TableCell>
               <TableCell>Documents</TableCell>
+              <TableCell align="center">Fiduciaire</TableCell>
               <TableCell align="right" width={100}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {visibleEntries.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 4, color: "text.secondary" }}>
+                <TableCell colSpan={7} align="center" sx={{ py: 4, color: "text.secondary" }}>
                   No sick leave entries{q ? " matching search" : ""} for {year}
                 </TableCell>
               </TableRow>
@@ -150,31 +150,18 @@ export default function SickLeavePage({ year, onDataChange, search = "" }) {
                   <TableCell>
                     <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 0.5 }}>
                       {e.attachments.map((a) => (
-                        <Box key={a.path} sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                          <Tooltip title={a.missing ? `File missing: ${a.path}` : `Open ${a.path}`}>
-                            <Chip
-                              size="small"
-                              icon={a.missing ? <WarningAmberIcon /> : <VisibilityIcon />}
-                              label={a.missing ? `Missing: ${a.file_name}` : a.file_name}
-                              color={a.missing ? "error" : "primary"}
-                              variant="outlined"
-                              onClick={() => docAction(() => openSickLeaveAttachment(e, a.path))}
-                              onDelete={() => docAction(() => removeSickLeaveAttachment(e, a.path))}
-                              sx={{ maxWidth: 220 }}
-                            />
-                          </Tooltip>
-                          <Tooltip title={a.sent_to_fiduciaire ? "Sent to the fiduciaire — click to undo" : "Click to mark as sent to the fiduciaire"}>
-                            <Chip
-                              size="small"
-                              icon={a.sent_to_fiduciaire ? <CheckIcon /> : undefined}
-                              label={a.sent_to_fiduciaire ? "Sent" : "Not sent"}
-                              color={a.sent_to_fiduciaire ? "success" : "default"}
-                              variant={a.sent_to_fiduciaire ? "filled" : "outlined"}
-                              onClick={() => docAction(() => setSickLeaveSent(e, a.path, !a.sent_to_fiduciaire))}
-                              sx={a.sent_to_fiduciaire ? undefined : { color: "text.secondary" }}
-                            />
-                          </Tooltip>
-                        </Box>
+                        <Tooltip key={a.path} title={a.missing ? `File missing: ${a.path}` : `Open ${a.path}`}>
+                          <Chip
+                            size="small"
+                            icon={a.missing ? <WarningAmberIcon /> : <VisibilityIcon />}
+                            label={a.missing ? `Missing: ${a.file_name}` : a.file_name}
+                            color={a.missing ? "error" : "primary"}
+                            variant="outlined"
+                            onClick={() => docAction(() => openSickLeaveAttachment(e, a.path))}
+                            onDelete={() => docAction(() => removeSickLeaveAttachment(e, a.path))}
+                            sx={{ maxWidth: 220 }}
+                          />
+                        </Tooltip>
                       ))}
                       <Tooltip title="Link one or more sick leave documents (files are not copied)">
                         <Chip
@@ -189,6 +176,23 @@ export default function SickLeavePage({ year, onDataChange, search = "" }) {
                           sx={{ color: "text.secondary" }}
                         />
                       </Tooltip>
+                    </Box>
+                  </TableCell>
+                  <TableCell align="center">
+                    {/* One checkbox per file, on the same line as its chip in the Documents column. */}
+                    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0.5 }}>
+                      {e.attachments.map((a) => (
+                        <Tooltip key={a.path} title={`${a.file_name}: ${a.sent_to_fiduciaire ? "sent to the fiduciaire" : "not sent to the fiduciaire yet"}`}>
+                          <Checkbox
+                            size="small"
+                            color="success"
+                            checked={a.sent_to_fiduciaire}
+                            onChange={() => docAction(() => setSickLeaveSent(e, a.path, !a.sent_to_fiduciaire))}
+                            sx={{ p: 0, height: 24 }}
+                          />
+                        </Tooltip>
+                      ))}
+                      <Box sx={{ height: 24 }} />
                     </Box>
                   </TableCell>
                   <TableCell align="right">
