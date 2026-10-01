@@ -167,7 +167,7 @@ Swaps to any of the above require explicit approval (see §6 Boundaries).
 - `data/attendance.xlsx` must remain openable and editable in Excel at all times.
 - Preserve header formatting, column widths, and existing sheet structure when writing.
 - No pickling, no binary sidecar formats — if a value can live in the workbook, it lives in the workbook.
-- Non-tabular app state goes in `data/app_settings.json`. This currently includes `app_users` (the list of operators allowed to record actions) and `current_user` (the active operator, used for audit-trail identity in the UI).
+- Non-tabular app state goes in `data/app_settings.json`. This currently includes `app_users` (the list of operators allowed to record actions) and `current_user` (the active operator, used for audit-trail identity in the UI). It also holds `sick_leave_docs`: per sick leave entry (`person|year|month`), a list of linked documents, each with its absolute path (link-only — files are never copied, moved, or deleted) and its own `sent_to_fiduciaire` flag.
 
 ### Business rules (Luxembourg)
 

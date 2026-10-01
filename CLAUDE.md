@@ -45,6 +45,7 @@ tests/                    Backend pytest suite (run with `pytest`)
 - Half-day leave supported
 - 11 Luxembourg public holidays per year
 - Sick leave tracked (count + dates), no balance, no cap
+- Sick leave documents: link-only attachments (any number per entry, never copied), each with a "sent to fiduciaire" flag; stored in `app_settings.json`
 
 ## Guardrails (see SPEC.md §6 for the full list)
 - All Excel I/O goes through `services/excel_service.py`. `data/attendance.xlsx` must stay Excel-editable.
