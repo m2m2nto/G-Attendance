@@ -4,7 +4,7 @@
 
 ## Phase 0 — Foundation
 - [x] 0.1 Python test harness + fixture workbook + smoke test
-- [ ] 0.2 Frontend vitest + RTL + smoke test
+- [x] 0.2 Frontend vitest + RTL + smoke test
 - [x] **Checkpoint:** Python runner green locally (41 tests)
 
 ## Phase 1 — Balance math
@@ -26,18 +26,18 @@
 - [x] 3.3 Locked file → 409 via API (1 test)
 - [x] **Checkpoint:** leave HTTP contract locked
 
-## Phase 4 — Frontend (not yet started)
-- [ ] 4.1 `LeaveDialog` renders + validation rule
+## Phase 4 — Frontend
+- [x] 4.1 `LeaveDialog` renders + validation rule (4 tests)
 
 ## Phase 5 — CI
 - [x] 5.1 `.github/workflows/tests.yml` — pytest on push/PR (macOS runner)
-- [ ] 5.2 Test badge in `README.md`
+- [x] 5.2 Test badge in `README.md` (CI now also runs ruff, ESLint and Vitest)
 
 ---
 
 ## Out of scope — flagged for separate decisions
-- [ ] `"Setembre"` vs. `"Settembre"` month-name typo in `services/excel_service.py:19`
-- [ ] Auto-update wiring in `electron/main.js`
-- [ ] Python/JS linters and type checkers
-- [ ] API test coverage for `balances`, `holidays`, `team`, `config`
-- [ ] Frontend test setup (vitest + RTL)
+- [x] `"Setembre"` vs. `"Settembre"` — kept: matches every existing sheet, labels are display-only; documented in `excel_service.py`
+- [x] Auto-update wiring in `electron/main.js` (`electron/updater.js`)
+- [x] Python/JS linters (ruff, ESLint) — type checkers not added: untyped Python + plain JSX
+- [x] API test coverage for `balances`, `holidays`, `team`, `config`
+- [x] Frontend test setup (vitest + RTL)

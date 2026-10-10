@@ -193,15 +193,15 @@ Service functions take `today` as a parameter, so tests can pin the date. Fronte
 
 ## Success Criteria
 
-- [ ] Each active member's recap renders in Italian, with numbers identical to the app's balance for the current year.
-- [ ] Template subject, body and frequency are editable and persisted in `app_settings.json`, with Reset to default.
-- [ ] Members switched off in Settings are left out of the recap; the setting persists in `recap_excluded_members`.
-- [ ] Copy puts the exact subject/body text on the clipboard.
-- [ ] Mark as sent sets `recap_last_sent`; status reports `next_due = last_sent + N months`.
-- [ ] Banner appears exactly when `is_due` is true.
-- [ ] With the window closed and the app still running, the Dock badge shows when due and clears after Mark as sent; at most one notification per day.
-- [ ] Cmd+Q and auto-update restart behave as before.
-- [ ] `pytest` is green with the new tests; `attendance.xlsx` is never written.
+- [x] Each active member's recap renders in Italian, with numbers identical to the app's balance for the current year.
+- [x] Template subject, body and frequency are editable and persisted in `app_settings.json`, with Reset to default.
+- [x] Members switched off in Settings are left out of the recap; the setting persists in `recap_excluded_members`.
+- [x] Copy puts the exact subject/body text on the clipboard.
+- [x] Mark as sent sets `recap_last_sent`; status reports `next_due = last_sent + N months`.
+- [x] Banner appears exactly when `is_due` is true.
+- [x] With the window closed and the app still running, the Dock badge shows when due and clears after Mark as sent; at most one notification per day.
+- [x] Cmd+Q and auto-update restart behave as before.
+- [x] `pytest` is green with the new tests; `attendance.xlsx` is never written.
 
 ## Resolved Decisions (2026-10-10)
 

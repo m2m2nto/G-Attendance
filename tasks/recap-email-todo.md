@@ -167,4 +167,4 @@
 
 ## Checkpoint: Complete
 - [x] All acceptance criteria met
-- [ ] Commit → push → `npm run electron:build` → zip → GitHub Release (`.zip` only)
+- [x] Commit → push → `npm run electron:build` → zip → GitHub Release (`.zip` only)

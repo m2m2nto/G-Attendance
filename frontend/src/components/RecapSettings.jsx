@@ -75,7 +75,7 @@ export default function RecapSettings({ team, onNotify }) {
         Recap email
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Italian template used to generate each team member's vacation and sick leave recap.
+        Italian template used to generate each team member&rsquo;s vacation and sick leave recap.
       </Typography>
 
       <TextField

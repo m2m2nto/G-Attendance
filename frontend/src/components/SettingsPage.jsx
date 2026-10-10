@@ -12,7 +12,6 @@ import FolderIcon from "@mui/icons-material/Folder";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import DescriptionIcon from "@mui/icons-material/Description";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import SystemUpdateIcon from "@mui/icons-material/SystemUpdate";
@@ -221,7 +220,6 @@ function AddMemberDialog({ open, onClose, onSave }) {
 // ---------------------------------------------------------------------------
 
 export default function SettingsPage({ search = "" }) {
-  const [config, setConfig] = useState({});
   const [team, setTeam] = useState([]);
   const [baseDays, setBaseDays] = useState("");
   const [accrual, setAccrual] = useState("");
@@ -237,7 +235,6 @@ export default function SettingsPage({ search = "" }) {
 
   const load = () => {
     Promise.all([getConfig(), getTeam(), getDataFile()]).then(([c, t, f]) => {
-      setConfig(c);
       setBaseDays(c.base_vacation_days || "26");
       setAccrual(c.accrual_per_month || "2.1667");
       setCarryover(c.carryover_deadline_month || "3");

@@ -22,4 +22,10 @@ export default defineConfig({
   build: {
     outDir: "dist",
   },
+  test: {
+    environment: "jsdom",
+    setupFiles: "./src/test/setup.js",
+    // @mui/x-date-pickers imports MUI directories, which Node ESM can't resolve
+    server: { deps: { inline: [/@mui\//] } },
+  },
 });

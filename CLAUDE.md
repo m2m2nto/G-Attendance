@@ -37,7 +37,7 @@ frontend/src/
                           RecapSettings
   api/client.js           Single axios instance
   theme.js                MUI theme (Gmail-like)
-tests/                    Backend pytest suite (run with `pytest`)
+tests/                    Backend pytest suite (run with `pytest`; lint with `ruff check .`)
 ```
 
 ## Business Rules
@@ -56,4 +56,4 @@ tests/                    Backend pytest suite (run with `pytest`)
 - UI stays Gmail-like / Material Design. No data-science dashboards.
 - After every pushed commit: build `.app`, zip it, publish GitHub Release. Upload `.zip` only — never `.dmg`.
 - Schema changes to `attendance.xlsx`, new deps, or stack swaps require explicit approval.
-- Backend `pytest` suite lives in `tests/` — extend it for changes touching business rules, `excel_service`, or leave/balance endpoints. Frontend still manual; include a manual test plan in PR descriptions.
+- Backend `pytest` suite lives in `tests/` — extend it for changes touching business rules, `excel_service`, or leave/balance endpoints. Frontend has a thin Vitest + RTL suite (`cd frontend && npm test`, lint with `npm run lint`); still include a manual test plan in PR descriptions for UI changes.

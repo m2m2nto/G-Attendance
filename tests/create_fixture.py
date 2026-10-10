@@ -119,7 +119,6 @@ def _create_summary_sheet(wb, year_suffix, weekend_count):
     sheet_name = f"Summary {year_suffix}"
     ws = wb.create_sheet(sheet_name)
 
-    full_year = 2000 + year_suffix
 
     # Row 3: headers
     ws.cell(row=3, column=1, value="Date")
@@ -168,7 +167,7 @@ def _create_summary_sheet(wb, year_suffix, weekend_count):
 
         # Col H: accrued — use the formula the code's regex expects
         ws.cell(row=row, column=8,
-                value=f"=ROUNDUP($A$20*12+$C$16, 1)")
+                value="=ROUNDUP($A$20*12+$C$16, 1)")
 
         # Col I: used — reference person sheet's Totale
         ws.cell(row=row, column=9,
