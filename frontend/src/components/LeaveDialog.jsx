@@ -54,7 +54,6 @@ export default function LeaveDialog({ open, onClose, onSave, entry, team, year, 
   const [existingDates, setExistingDates] = useState({});
   const [holidays, setHolidays] = useState(() => new Set());
   const [anchor, setAnchor] = useState(null);
-  const [calendarMonth, setCalendarMonth] = useState(dayjs().year(year).month(new Date().getMonth()));
 
   const isEdit = !!entry && !!entry.month;
 
@@ -121,7 +120,6 @@ export default function LeaveDialog({ open, onClose, onSave, entry, team, year, 
     setAnchor(null);
     if (entry && entry.month) {
       setName(entry.name || "");
-      setCalendarMonth(dayjs().year(year).month(entry.month - 1));
       const dates = {};
       if (entry.dates_detail) {
         entry.dates_detail.split(",").map((s) => s.trim()).filter(Boolean).forEach((part) => {
@@ -138,7 +136,6 @@ export default function LeaveDialog({ open, onClose, onSave, entry, team, year, 
     } else {
       const initialName = team?.[0]?.name || "";
       setName(initialName);
-      setCalendarMonth(dayjs().year(year).month(new Date().getMonth()));
       setSelectedDates({});
       loadExisting(initialName);
     }
@@ -260,8 +257,7 @@ export default function LeaveDialog({ open, onClose, onSave, entry, team, year, 
               <DateCalendar
                 value={null}
                 onChange={handleDayClick}
-                onMonthChange={(date) => setCalendarMonth(date)}
-                defaultCalendarMonth={calendarMonth}
+                referenceDate={dayjs().date(1).year(year).month(isEdit ? entry.month - 1 : new Date().getMonth())}
                 shouldDisableDate={shouldDisableDate}
                 slots={{ day: SelectedDay }}
                 slotProps={{ day: { selectedDates, existingDates } }}

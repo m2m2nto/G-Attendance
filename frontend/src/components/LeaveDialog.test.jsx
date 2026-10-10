@@ -69,4 +69,9 @@ describe("LeaveDialog", () => {
     expect(screen.getByText("No dates selected")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Update" })).toBeDisabled();
   });
+
+  it("opens the calendar on the edited entry's month", () => {
+    renderDialog({ entry: { name: "Bob", month: 3, dates_detail: "4" } });
+    expect(screen.getByText("March 2026")).toBeInTheDocument();
+  });
 });
