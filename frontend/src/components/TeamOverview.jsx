@@ -8,6 +8,7 @@ import AddIcon from "@mui/icons-material/Add";
 import BeachAccessIcon from "@mui/icons-material/BeachAccess";
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import EventIcon from "@mui/icons-material/Event";
+import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import { computeBalances, getLeave, addLeave } from "../api/client";
 import LeaveDialog from "./LeaveDialog";
 
@@ -191,7 +192,7 @@ function MemberCard({ member, sickDays, colorIdx, onAdd, onView }) {
   );
 }
 
-export default function TeamOverview({ year, onDataChange, search = "" }) {
+export default function TeamOverview({ year, onDataChange, search = "", onOpenRecap }) {
   const [members, setMembers] = useState([]);
   const [sickByPerson, setSickByPerson] = useState({});
   const [loading, setLoading] = useState(true);
@@ -268,9 +269,14 @@ export default function TeamOverview({ year, onDataChange, search = "" }) {
 
   return (
     <Box>
-      <Typography variant="h5" sx={{ mb: 3 }}>
-        Team Overview <Typography component="span" color="text.secondary" sx={{ fontSize: "1rem" }}>({year})</Typography>
-      </Typography>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+        <Typography variant="h5">
+          Team Overview <Typography component="span" color="text.secondary" sx={{ fontSize: "1rem" }}>({year})</Typography>
+        </Typography>
+        <Button variant="outlined" size="small" startIcon={<MailOutlineIcon />} onClick={onOpenRecap}>
+          Recap email
+        </Button>
+      </Box>
       {members.length > 0 && members[0].weekend_holidays > 0 && (
         <Chip
           icon={<EventIcon sx={{ fontSize: 16 }} />}

@@ -20,6 +20,7 @@ import {
   getConfig, updateConfig, getTeam, addTeamMember,
   getDataFile, setDataFile, browseFiles,
 } from "../api/client";
+import RecapSettings from "./RecapSettings";
 
 
 // ---------------------------------------------------------------------------
@@ -407,6 +408,12 @@ export default function SettingsPage({ search = "" }) {
           </Button>
         </Box>
       </Paper>
+
+      {/* Recap email */}
+      <RecapSettings
+        team={team}
+        onNotify={(message, severity) => setSnack({ open: true, message, severity })}
+      />
 
       {/* Team Management */}
       <Paper sx={{ p: 3 }}>
