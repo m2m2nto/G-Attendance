@@ -36,3 +36,14 @@ def test_list_recaps_shape_and_exclusion(flask_client):
     flask_client.put("/api/recap/settings", json={"excluded_members": ["Alice"]})
     recaps = flask_client.get("/api/recap?year=2026").get_json()
     assert [r["name"] for r in recaps] == ["Bob"]
+
+
+def test_status_and_mark_sent(flask_client):
+    s = flask_client.get("/api/recap/status").get_json()
+    assert s["is_due"] is True and s["last_sent"] is None
+
+    resp = flask_client.post("/api/recap/sent")
+    assert resp.status_code == 200
+    s = resp.get_json()
+    assert s["is_due"] is False and s["last_sent"] is not None
+    assert flask_client.get("/api/recap/status").get_json() == s

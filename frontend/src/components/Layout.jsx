@@ -45,7 +45,7 @@ function getInitials(name) {
 
 export default function Layout({
   page, setPage, year, setYear, search, setSearch, children,
-  appUsers, setAppUsers, currentUser, setCurrentUser,
+  appUsers, setAppUsers, currentUser, setCurrentUser, recapBanner,
 }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -389,6 +389,7 @@ export default function Layout({
         }}
       >
         <UpdateBanner />
+        {recapBanner}
         {children}
       </Box>
 

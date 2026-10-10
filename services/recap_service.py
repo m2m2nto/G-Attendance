@@ -195,3 +195,37 @@ def render_recaps(year, today):
             },
         })
     return recaps
+
+
+# ---------------------------------------------------------------------------
+# Reminder schedule — rolling: due N months after the last "Mark as sent"
+# ---------------------------------------------------------------------------
+
+def add_months(d, months):
+    """Same day N months later, clamped to the month's end (30 Nov + 3 -> 28/29 Feb)."""
+    index = d.month - 1 + months
+    year, month = d.year + index // 12, index % 12 + 1
+    return date(year, month, min(d.day, calendar.monthrange(year, month)[1]))
+
+
+def get_status(today):
+    """Never sent counts as due now."""
+    settings = get_settings()
+    last_sent = _load_settings().get("recap_last_sent")
+    if not last_sent:
+        return {"last_sent": None, "frequency_months": settings["frequency_months"],
+                "next_due": None, "is_due": True}
+    next_due = add_months(date.fromisoformat(last_sent), settings["frequency_months"])
+    return {
+        "last_sent": last_sent,
+        "frequency_months": settings["frequency_months"],
+        "next_due": next_due.isoformat(),
+        "is_due": today >= next_due,
+    }
+
+
+def mark_sent(today):
+    settings = _load_settings()
+    settings["recap_last_sent"] = today.isoformat()
+    _save_settings(settings)
+    return get_status(today)

@@ -56,5 +56,7 @@ export const addAppUser = (name) => api.post("/config/users", { name }).then((r)
 export const getRecap = (params) => api.get("/recap", { params }).then((r) => r.data);
 export const getRecapSettings = () => api.get("/recap/settings").then((r) => r.data);
 export const updateRecapSettings = (data) => api.put("/recap/settings", data).then((r) => r.data);
+export const getRecapStatus = () => api.get("/recap/status").then((r) => r.data);
+export const markRecapSent = () => api.post("/recap/sent").then((r) => r.data);
 
 export default api;

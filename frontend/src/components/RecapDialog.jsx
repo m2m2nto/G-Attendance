@@ -4,9 +4,10 @@ import {
   List, ListItemButton, ListItemText, TextField, CircularProgress, Snackbar, Alert,
 } from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import { getRecap } from "../api/client";
+import dayjs from "dayjs";
+import { getRecap, markRecapSent } from "../api/client";
 
-export default function RecapDialog({ open, onClose }) {
+export default function RecapDialog({ open, onClose, onSent }) {
   const [recaps, setRecaps] = useState([]);
   const [selected, setSelected] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -30,6 +31,20 @@ export default function RecapDialog({ open, onClose }) {
       setSnack({ open: true, message: `${label} copied`, severity: "success" });
     } catch {
       setSnack({ open: true, message: "Could not copy to clipboard", severity: "error" });
+    }
+  };
+
+  const handleMarkSent = async () => {
+    try {
+      const status = await markRecapSent();
+      onSent(status);
+      setSnack({
+        open: true,
+        message: `Marked as sent — next reminder on ${dayjs(status.next_due).format("DD/MM/YYYY")}`,
+        severity: "success",
+      });
+    } catch (err) {
+      setSnack({ open: true, message: err.response?.data?.error || "Could not mark as sent", severity: "error" });
     }
   };
 
@@ -89,6 +104,7 @@ export default function RecapDialog({ open, onClose }) {
         )}
       </DialogContent>
       <DialogActions>
+        <Button onClick={handleMarkSent} disabled={loading || recaps.length === 0}>Mark as sent</Button>
         <Button onClick={onClose}>Close</Button>
       </DialogActions>
 
