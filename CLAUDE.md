@@ -24,15 +24,17 @@ Local macOS desktop app for managing team vacation, sick leave, and Luxembourg p
 app.py                    Flask entry point
 app.spec                  PyInstaller spec
 requirements.txt
-api/                      Flask blueprints: team, leave, holidays, balances, config
+api/                      Flask blueprints: team, leave, holidays, balances, config, recap
 services/excel_service.py Single read/write layer over attendance.xlsx
+services/recap_service.py Recap email rendering + reminder schedule (reads via excel_service)
 scripts/import_data.py    Migration
 data/                     attendance.xlsx + app_settings.json
 electron/                 main.js + preload.js + updater.js (auto-update)
 frontend/src/
   components/             Layout, TeamOverview, VacationPage, SickLeavePage,
                           HolidaysPage, SettingsPage, LeaveDialog, ConfirmDialog,
-                          UpdateBanner
+                          UpdateBanner, RecapDialog, RecapReminderBanner,
+                          RecapSettings
   api/client.js           Single axios instance
   theme.js                MUI theme (Gmail-like)
 tests/                    Backend pytest suite (run with `pytest`)
@@ -46,6 +48,7 @@ tests/                    Backend pytest suite (run with `pytest`)
 - 11 Luxembourg public holidays per year
 - Sick leave tracked (count + dates), no balance, no cap
 - Sick leave documents: link-only attachments (any number per entry, never copied), each with a "sent to fiduciaire" flag; stored in `app_settings.json`
+- Recap email (`SPEC-recap-email.md`): per-member Italian recap, copied to the clipboard (never sent by the app); due every N months after "Mark as sent"; banner + Dock badge + daily notification. Closing the window keeps the app in the Dock; Cmd+Q quits
 
 ## Guardrails (see SPEC.md §6 for the full list)
 - All Excel I/O goes through `services/excel_service.py`. `data/attendance.xlsx` must stay Excel-editable.

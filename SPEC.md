@@ -66,9 +66,11 @@ api/                      Flask blueprints (one per domain)
   holidays.py             /api/holidays    — Luxembourg public holidays
   balances.py             /api/balances    — computed vacation balances
   config.py               /api/config      — app settings + app users (audit identity)
+  recap.py                /api/recap       — Italian recap email (templates, status, mark as sent)
 
 services/
   excel_service.py        Single read/write layer over attendance.xlsx (openpyxl)
+  recap_service.py        Recap rendering, Italian formatting, reminder schedule (reads via excel_service)
 
 scripts/
   import_data.py          One-time migration from legacy workbook
@@ -78,8 +80,9 @@ data/
   app_settings.json       Non-tabular app settings (incl. app_users + current_user)
 
 electron/
-  main.js                 Spawns PyInstaller backend, loads Flask URL in BrowserWindow
-  preload.js              IPC bridge (auto-update channel)
+  main.js                 Spawns PyInstaller backend, loads Flask URL in BrowserWindow; stays alive in the
+                          Dock when the window closes; recap Dock badge + daily notification
+  preload.js              IPC bridge (auto-update + recap channels)
   updater.js              GitHub Releases auto-updater (zip + version check, IPC events)
 
 frontend/                 React 18 + MUI 6 + Vite 6
@@ -98,6 +101,9 @@ frontend/                 React 18 + MUI 6 + Vite 6
       LeaveDialog.jsx     Add/edit leave entry
       ConfirmDialog.jsx   Reusable confirm modal
       UpdateBanner.jsx    Auto-update prompt (driven by electron/updater.js IPC events)
+      RecapDialog.jsx     Per-member recap email preview, Copy, Mark as sent
+      RecapReminderBanner.jsx  "Recap due" banner (Open recap / Later)
+      RecapSettings.jsx   Settings section: templates, reminder frequency, included members
 
 tests/                    Backend pytest suite
   conftest.py             Shared fixtures (tmp workbook copies)
@@ -108,6 +114,8 @@ tests/                    Backend pytest suite
   test_leave_roundtrip.py
   test_file_locked.py     409 path when attendance.xlsx is locked by Excel
   test_api_leave.py
+  test_recap_service.py   Recap rendering, Italian formatting, exclusions, reminder schedule
+  test_api_recap.py
   test_smoke.py
 
 tasks/                    Working notes for in-flight plans (plan.md, todo.md) — not packaged
@@ -167,7 +175,7 @@ Swaps to any of the above require explicit approval (see §6 Boundaries).
 - `data/attendance.xlsx` must remain openable and editable in Excel at all times.
 - Preserve header formatting, column widths, and existing sheet structure when writing.
 - No pickling, no binary sidecar formats — if a value can live in the workbook, it lives in the workbook.
-- Non-tabular app state goes in `data/app_settings.json`. This currently includes `app_users` (the list of operators allowed to record actions) and `current_user` (the active operator, used for audit-trail identity in the UI). It also holds `sick_leave_docs`: per sick leave entry (`person|year|month`), a list of linked documents, each with its absolute path (link-only — files are never copied, moved, or deleted) and its own `sent_to_fiduciaire` flag.
+- Non-tabular app state goes in `data/app_settings.json`. This currently includes `app_users` (the list of operators allowed to record actions) and `current_user` (the active operator, used for audit-trail identity in the UI). It also holds `sick_leave_docs`: per sick leave entry (`person|year|month`), a list of linked documents, each with its absolute path (link-only — files are never copied, moved, or deleted) and its own `sent_to_fiduciaire` flag. The recap email (see `SPEC-recap-email.md`) adds `recap_subject_template`, `recap_body_template`, `recap_frequency_months` (1–12, default 3), `recap_excluded_members` and `recap_last_sent` (ISO date; missing = due now).
 
 ### Business rules (Luxembourg)
 
@@ -191,6 +199,7 @@ Current coverage:
 - `test_leave_roundtrip.py` — write via the service, re-read with a fresh openpyxl load, assert values and formatting survive.
 - `test_file_locked.py` — `IOError` on a locked workbook surfaces as HTTP 409.
 - `test_api_leave.py`, `test_smoke.py` — Flask blueprint smoke + leave endpoints.
+- `test_recap_service.py`, `test_api_recap.py` — recap email rendering (Italian numbers, placeholders, exclusions), rolling reminder schedule, `/api/recap` endpoints.
 
 Backend changes that touch business rules, the Excel layer, or a leave/balance endpoint must extend this suite (or explain in the PR why no test fits) — see §6 *Always do*.
 

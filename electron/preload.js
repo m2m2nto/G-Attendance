@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getAppVersion: () => ipcRenderer.invoke("update:get-version"),
   selectExcelFile: (currentPath) =>
     ipcRenderer.invoke("file:select-excel", currentPath),
+  refreshRecapStatus: () => ipcRenderer.invoke("recap:refresh"),
+  takePendingRecapOpen: () => ipcRenderer.invoke("recap:take-pending-open"),
 
   // Listeners (main → renderer)
   onUpdateAvailable: (cb) =>
@@ -18,6 +20,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.on("update:downloaded", (_e, data) => cb(data)),
   onUpdateError: (cb) =>
     ipcRenderer.on("update:error", (_e, data) => cb(data)),
+  onRecapOpen: (cb) => ipcRenderer.on("recap:open", () => cb()),
 
   // Cleanup
   removeUpdateListeners: () => {
@@ -26,4 +29,5 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.removeAllListeners("update:downloaded");
     ipcRenderer.removeAllListeners("update:error");
   },
+  removeRecapListeners: () => ipcRenderer.removeAllListeners("recap:open"),
 });

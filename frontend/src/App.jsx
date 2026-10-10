@@ -44,6 +44,20 @@ export default function App() {
     getRecapStatus().then(setRecapStatus).catch(() => {});
   }, []);
 
+  // Electron: a click on the "recap due" notification opens the recap dialog.
+  useEffect(() => {
+    const electron = window.electronAPI;
+    if (!electron?.onRecapOpen) return undefined;
+    electron.onRecapOpen(() => setRecapOpen(true));
+    electron.takePendingRecapOpen().then((pending) => pending && setRecapOpen(true));
+    return () => electron.removeRecapListeners();
+  }, []);
+
+  const handleRecapSent = useCallback((status) => {
+    setRecapStatus(status);
+    window.electronAPI?.refreshRecapStatus?.(); // clear the Dock badge now, not at the next hourly poll
+  }, []);
+
   useEffect(() => {
     getAppUsers().then((data) => {
       setAppUsers(data.users || []);
@@ -84,7 +98,7 @@ export default function App() {
           onOpenRecap={() => setRecapOpen(true)}
         />
       </Layout>
-      <RecapDialog open={recapOpen} onClose={() => setRecapOpen(false)} onSent={setRecapStatus} />
+      <RecapDialog open={recapOpen} onClose={() => setRecapOpen(false)} onSent={handleRecapSent} />
     </ThemeProvider>
   );
 }

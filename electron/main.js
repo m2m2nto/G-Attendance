@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, Notification } = require("electron");
 const { spawn } = require("child_process");
 const path = require("path");
 const fs = require("fs");
@@ -8,8 +8,9 @@ const Updater = require("./updater");
 let mainWindow;
 let flaskProcess;
 let updater;
+let flaskReady = false;
 
-const FLASK_PORT = 5001;
+const FLASK_PORT = Number(process.env.FLASK_PORT) || 5001;
 const FLASK_URL = `http://localhost:${FLASK_PORT}`;
 
 function getFlaskPath() {
@@ -99,11 +100,75 @@ function createWindow() {
   });
 
   mainWindow.loadURL(FLASK_URL);
+  if (updater) updater.mainWindow = mainWindow;
 
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
 }
+
+// -- Recap reminder: Dock badge + daily notification ------------------------
+
+const RECAP_POLL_MS = 60 * 60 * 1000;
+let lastRecapNotifiedDay = null;
+let recapNotification = null; // keep a reference so the click handler isn't garbage-collected
+let pendingRecapOpen = false; // a notification click that the renderer hasn't picked up yet
+
+function fetchRecapStatus() {
+  return new Promise((resolve) => {
+    http
+      .get(`${FLASK_URL}/api/recap/status`, (res) => {
+        let body = "";
+        res.on("data", (chunk) => (body += chunk));
+        res.on("end", () => {
+          try {
+            resolve(res.statusCode === 200 ? JSON.parse(body) : null);
+          } catch {
+            resolve(null);
+          }
+        });
+      })
+      .on("error", () => resolve(null));
+  });
+}
+
+function openRecapFromNotification() {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+    mainWindow.webContents.send("recap:open");
+  } else {
+    // The renderer collects this on startup via recap:take-pending-open.
+    pendingRecapOpen = true;
+    createWindow();
+  }
+}
+
+async function refreshRecapReminder() {
+  const status = await fetchRecapStatus();
+  if (!status) return;
+  app.dock?.setBadge(status.is_due ? "1" : "");
+
+  const today = new Date().toDateString();
+  if (status.is_due && lastRecapNotifiedDay !== today && Notification.isSupported()) {
+    lastRecapNotifiedDay = today;
+    recapNotification = new Notification({
+      title: "Vacation recap due",
+      body: "Time to send the vacation and sick leave recap to the team.",
+    });
+    recapNotification.on("click", openRecapFromNotification);
+    recapNotification.show();
+  }
+}
+
+ipcMain.handle("recap:refresh", () => refreshRecapReminder());
+
+ipcMain.handle("recap:take-pending-open", () => {
+  const pending = pendingRecapOpen;
+  pendingRecapOpen = false;
+  return pending;
+});
 
 // -- IPC handlers for auto-updater ------------------------------------------
 
@@ -156,7 +221,11 @@ ipcMain.handle("file:select-excel", async (_e, currentPath) => {
 app.on("ready", async () => {
   try {
     await startFlask();
+    flaskReady = true;
     createWindow();
+
+    refreshRecapReminder();
+    setInterval(refreshRecapReminder, RECAP_POLL_MS);
 
     // Auto-check for updates on startup (packaged builds only)
     if (app.isPackaged) {
@@ -169,11 +238,14 @@ app.on("ready", async () => {
   }
 });
 
+// macOS convention: closing the window keeps the app (and Flask) alive in the
+// Dock, so the recap reminder badge still shows. Cmd+Q quits via before-quit.
 app.on("window-all-closed", () => {
-  if (flaskProcess) {
-    flaskProcess.kill();
-  }
-  app.quit();
+  if (process.platform !== "darwin") app.quit();
+});
+
+app.on("activate", () => {
+  if (flaskReady && !mainWindow) createWindow();
 });
 
 app.on("before-quit", () => {
