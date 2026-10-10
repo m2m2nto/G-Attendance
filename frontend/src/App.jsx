@@ -7,6 +7,7 @@ import VacationPage from "./components/VacationPage";
 import SickLeavePage from "./components/SickLeavePage";
 import HolidaysPage from "./components/HolidaysPage";
 import SettingsPage from "./components/SettingsPage";
+import RecapDialog from "./components/RecapDialog";
 import { getAppUsers } from "./api/client";
 
 const PAGES = {
@@ -24,6 +25,7 @@ export default function App() {
   const [appUsers, setAppUsers] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [search, setSearch] = useState("");
+  const [recapOpen, setRecapOpen] = useState(false);
 
   // Clear the universal search when switching pages — a query is scoped to one view.
   const changePage = useCallback((next) => {
@@ -65,8 +67,10 @@ export default function App() {
           onDataChange={triggerRefresh}
           currentUser={currentUser}
           search={search}
+          onOpenRecap={() => setRecapOpen(true)}
         />
       </Layout>
+      <RecapDialog open={recapOpen} onClose={() => setRecapOpen(false)} />
     </ThemeProvider>
   );
 }

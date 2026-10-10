@@ -52,4 +52,9 @@ export const getAppUsers = () => api.get("/config/users").then((r) => r.data);
 export const setCurrentUser = (name) => api.put("/config/users/current", { name }).then((r) => r.data);
 export const addAppUser = (name) => api.post("/config/users", { name }).then((r) => r.data);
 
+// Recap email (Italian per-member summary, templates in app_settings.json)
+export const getRecap = (params) => api.get("/recap", { params }).then((r) => r.data);
+export const getRecapSettings = () => api.get("/recap/settings").then((r) => r.data);
+export const updateRecapSettings = (data) => api.put("/recap/settings", data).then((r) => r.data);
+
 export default api;

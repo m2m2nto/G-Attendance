@@ -8,6 +8,7 @@ from api.leave import leave_bp
 from api.holidays import holidays_bp
 from api.balances import balances_bp
 from api.config import config_bp
+from api.recap import recap_bp
 
 
 def _resolve_frontend_dist():
@@ -39,6 +40,7 @@ app.register_blueprint(leave_bp, url_prefix="/api/leave")
 app.register_blueprint(holidays_bp, url_prefix="/api/holidays")
 app.register_blueprint(balances_bp, url_prefix="/api/balances")
 app.register_blueprint(config_bp, url_prefix="/api/config")
+app.register_blueprint(recap_bp, url_prefix="/api/recap")
 
 
 @app.route("/", defaults={"path": ""})
