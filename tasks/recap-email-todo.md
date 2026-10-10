@@ -71,7 +71,7 @@
 - [x] `pytest` green, `npm run build` clean
 - [x] End-to-end: Settings → template/exclusions → dialog → copy → paste
 - [x] `attendance.xlsx` modification time unchanged
-- [ ] Review with human before Phase 2
+- [x] Review with human before Phase 2
 
 ## Phase 2 — Reminder in-app (part B)
 
@@ -79,13 +79,13 @@
 **Description:** In `recap_service`, add `add_months(d, n)` (clamped to month end), `get_status(today)` → `{last_sent, frequency_months, next_due, is_due}`, and `mark_sent(today)`. Add `GET /api/recap/status` and `POST /api/recap/sent`, and the `getRecapStatus` and `markRecapSent` client helpers. Add a "Mark as sent" button to `RecapDialog`.
 
 **Acceptance criteria:**
-- [ ] `null` last-sent → due; 10/07 + 3 months → 09/10 not due, 10/10 due; 30/11 + 3 → 28/02 (29/02 in a leap year); frequencies 1 and 12 correct
-- [ ] `POST /sent` sets `recap_last_sent` to today and returns the new status
-- [ ] Clicking "Mark as sent" in the dialog updates the status (verified via `GET /status`)
+- [x] `null` last-sent → due; 10/07 + 3 months → 09/10 not due, 10/10 due; 30/11 + 3 → 28/02 (29/02 in a leap year); frequencies 1 and 12 correct
+- [x] `POST /sent` sets `recap_last_sent` to today and returns the new status
+- [x] Clicking "Mark as sent" in the dialog updates the status (verified via `GET /status`)
 
 **Verification:**
-- [ ] `pytest tests/test_recap_service.py tests/test_api_recap.py -v`; full `pytest` green
-- [ ] `npm run build` clean
+- [x] `pytest tests/test_recap_service.py tests/test_api_recap.py -v`; full `pytest` green
+- [x] `npm run build` clean
 
 **Dependencies:** T4
 **Files:** `services/recap_service.py`, `api/recap.py`, `frontend/src/api/client.js`, `frontend/src/components/RecapDialog.jsx`, tests
@@ -95,21 +95,21 @@
 **Description:** Create `RecapReminderBanner.jsx`, mounted in `Layout.jsx` next to `UpdateBanner`. It fetches the status on mount and shows when `is_due`: "È ora di inviare il riepilogo ferie — ultimo invio dd/mm/yyyy" (or "mai inviato"), with "Open recap" (opens the dialog through the App callback) and "Later" (hidden until the next launch, held in memory only). It hides immediately after "Mark as sent".
 
 **Acceptance criteria:**
-- [ ] Shown iff `is_due`; Later hides it until the app restarts
-- [ ] Open recap opens the dialog; Mark as sent hides the banner without a reload
-- [ ] Visual style matches `UpdateBanner`
+- [x] Shown iff `is_due`; Later hides it until the app restarts
+- [x] Open recap opens the dialog; Mark as sent hides the banner without a reload
+- [x] Visual style matches `UpdateBanner`
 
 **Verification:**
-- [ ] `npm run build` clean
-- [ ] Manual: spec step 3, toggling `recap_last_sent` in the JSON
+- [x] `npm run build` clean
+- [x] Manual: spec step 3, toggling `recap_last_sent` in the JSON
 
 **Dependencies:** T5
 **Files:** `frontend/src/components/RecapReminderBanner.jsx` (new), `frontend/src/components/Layout.jsx`, `frontend/src/App.jsx`
 **Scope:** S
 
 ## Checkpoint B — after T5–T6
-- [ ] `pytest` green, build clean
-- [ ] Due/not-due cycle works end-to-end in the browser (`python app.py` + `npm run dev`)
+- [x] `pytest` green, build clean
+- [x] Due/not-due cycle works end-to-end in the browser (`python app.py` + `npm run dev`)
 
 ## Phase 3 — Reminder outside the window (part B)
 

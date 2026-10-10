@@ -8,7 +8,8 @@ import SickLeavePage from "./components/SickLeavePage";
 import HolidaysPage from "./components/HolidaysPage";
 import SettingsPage from "./components/SettingsPage";
 import RecapDialog from "./components/RecapDialog";
-import { getAppUsers } from "./api/client";
+import RecapReminderBanner from "./components/RecapReminderBanner";
+import { getAppUsers, getRecapStatus } from "./api/client";
 
 const PAGES = {
   team: TeamOverview,
@@ -26,6 +27,8 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [search, setSearch] = useState("");
   const [recapOpen, setRecapOpen] = useState(false);
+  const [recapStatus, setRecapStatus] = useState(null);
+  const [recapSnoozed, setRecapSnoozed] = useState(false); // "Later" lasts until the next launch
 
   // Clear the universal search when switching pages — a query is scoped to one view.
   const changePage = useCallback((next) => {
@@ -35,6 +38,10 @@ export default function App() {
 
   const triggerRefresh = useCallback(() => {
     setRefreshKey((k) => k + 1);
+  }, []);
+
+  useEffect(() => {
+    getRecapStatus().then(setRecapStatus).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -60,6 +67,13 @@ export default function App() {
         setAppUsers={setAppUsers}
         currentUser={currentUser}
         setCurrentUser={setCurrentUser}
+        recapBanner={!recapSnoozed && (
+          <RecapReminderBanner
+            status={recapStatus}
+            onOpenRecap={() => setRecapOpen(true)}
+            onLater={() => setRecapSnoozed(true)}
+          />
+        )}
       >
         <PageComponent
           year={year}
@@ -70,7 +84,7 @@ export default function App() {
           onOpenRecap={() => setRecapOpen(true)}
         />
       </Layout>
-      <RecapDialog open={recapOpen} onClose={() => setRecapOpen(false)} />
+      <RecapDialog open={recapOpen} onClose={() => setRecapOpen(false)} onSent={setRecapStatus} />
     </ThemeProvider>
   );
 }

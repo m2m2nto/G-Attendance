@@ -45,14 +45,14 @@ T7 Electron stay-alive lifecycle   (independent; can run in parallel with T1–T
 ### Checkpoint A
 - [x] `pytest` green; `npm run build` clean
 - [x] Recaps copied from the dialog match the Vacation/Sick Leave pages; exclusions work
-- [ ] Human review
+- [x] Human review
 
 ### Phase 2: Reminder in-app (spec part B)
-- [ ] T5: Due-date logic, status/sent endpoints, "Mark as sent"
-- [ ] T6: In-app reminder banner
+- [x] T5: Due-date logic, status/sent endpoints, "Mark as sent"
+- [x] T6: In-app reminder banner
 
 ### Checkpoint B
-- [ ] `pytest` green; banner shows/hides correctly from the JSON state
+- [x] `pytest` green; banner shows/hides correctly from the JSON state
 
 ### Phase 3: Reminder outside the window (spec part B)
 - [ ] T7: Electron — stay alive in the Dock when the window closes

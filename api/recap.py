@@ -1,7 +1,7 @@
 from datetime import date
 
 from flask import Blueprint, jsonify, request
-from services.recap_service import get_settings, render_recaps, update_settings
+from services.recap_service import get_settings, get_status, mark_sent, render_recaps, update_settings
 
 recap_bp = Blueprint("recap", __name__)
 
@@ -25,3 +25,13 @@ def write_settings():
         return jsonify(update_settings(data))
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
+
+
+@recap_bp.route("/status", methods=["GET"])
+def status():
+    return jsonify(get_status(date.today()))
+
+
+@recap_bp.route("/sent", methods=["POST"])
+def sent():
+    return jsonify(mark_sent(date.today()))

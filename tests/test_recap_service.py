@@ -13,7 +13,7 @@ import pytest
 from services.excel_service import add_leave, compute_balance, delete_leave, _load_settings
 from services.recap_service import (
     DEFAULT_BODY, DEFAULT_SUBJECT, PLACEHOLDERS,
-    format_it, get_settings, render_recaps, update_settings,
+    add_months, format_it, get_settings, get_status, mark_sent, render_recaps, update_settings,
 )
 
 TODAY = date(2026, 10, 10)
@@ -129,3 +129,45 @@ def test_excluded_member_missing_and_stale_name_ignored(patch_data_file):
     update_settings({"excluded_members": ["Bob", "Someone Who Left"]})
     names = [r["name"] for r in render_recaps(2026, TODAY)]
     assert names == ["Alice"]
+
+
+# ---------------------------------------------------------------------------
+# Reminder schedule (rolling: due N months after the last "Mark as sent")
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("start, months, expected", [
+    (date(2026, 7, 10), 3, date(2026, 10, 10)),
+    (date(2026, 11, 30), 3, date(2027, 2, 28)),
+    (date(2027, 11, 30), 3, date(2028, 2, 29)),  # leap year
+    (date(2026, 1, 31), 1, date(2026, 2, 28)),
+    (date(2026, 10, 10), 12, date(2027, 10, 10)),
+])
+def test_add_months(start, months, expected):
+    assert add_months(start, months) == expected
+
+
+def test_status_never_sent_is_due(patch_data_file):
+    s = get_status(TODAY)
+    assert s == {"last_sent": None, "frequency_months": 3, "next_due": None, "is_due": True}
+
+
+def test_status_due_on_next_due_date(patch_data_file):
+    mark_sent(date(2026, 7, 10))
+    assert get_status(date(2026, 10, 9))["is_due"] is False
+    s = get_status(date(2026, 10, 10))
+    assert s == {"last_sent": "2026-07-10", "frequency_months": 3, "next_due": "2026-10-10", "is_due": True}
+
+
+def test_status_follows_frequency(patch_data_file):
+    mark_sent(date(2026, 7, 10))
+    update_settings({"frequency_months": 1})
+    assert get_status(date(2026, 8, 10))["is_due"] is True
+    update_settings({"frequency_months": 12})
+    assert get_status(date(2027, 7, 9))["is_due"] is False
+
+
+def test_mark_sent_persists_and_clears_due(patch_data_file):
+    s = mark_sent(TODAY)
+    assert _load_settings()["recap_last_sent"] == "2026-10-10"
+    assert s["is_due"] is False
+    assert s["next_due"] == "2027-01-10"
