@@ -55,17 +55,17 @@ T7 Electron stay-alive lifecycle   (independent; can run in parallel with T1–T
 - [x] `pytest` green; banner shows/hides correctly from the JSON state
 
 ### Phase 3: Reminder outside the window (spec part B)
-- [ ] T7: Electron — stay alive in the Dock when the window closes
-- [ ] T8: Electron — Dock badge, daily notification, IPC
+- [x] T7: Electron — stay alive in the Dock when the window closes
+- [x] T8: Electron — Dock badge, daily notification, IPC
 
 ### Checkpoint C
-- [ ] Full manual test plan from the spec (steps 1–7) passes in `npm run electron:dev`
+- [x] Full manual test plan from the spec (steps 1–7) passes in `npm run electron:dev`
 
 ### Phase 4: Wrap-up
-- [ ] T9: Sync SPEC.md / CLAUDE.md, final verification
+- [x] T9: Sync SPEC.md / CLAUDE.md, final verification
 
 ### Checkpoint: Complete
-- [ ] All spec success criteria ticked
+- [x] All spec success criteria ticked
 - [ ] Ready for commit → push → release (`.zip` only), per guardrails
 
 ## Risks and Mitigations

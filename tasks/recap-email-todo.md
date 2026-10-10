@@ -117,12 +117,12 @@
 **Description:** In `main.js`, on darwin, `window-all-closed` no longer kills Flask or quits. An `activate` handler re-creates the window if none exists, and `updater` gets the new window reference if needed. `before-quit` keeps killing Flask.
 
 **Acceptance criteria:**
-- [ ] Closing the window leaves the app in the Dock; clicking the Dock icon reopens the window
-- [ ] Cmd+Q quits and Flask dies (`lsof -i :5001` empty)
-- [ ] The auto-update apply path still quits and relaunches (code check of `updater.js` + manual check in a packaged build when the next release is made)
+- [x] Closing the window leaves the app in the Dock; clicking the Dock icon reopens the window
+- [x] Cmd+Q quits and Flask dies (`lsof -i :5001` empty)
+- [x] The auto-update apply path still quits and relaunches (code check of `updater.js` + manual check in a packaged build when the next release is made)
 
 **Verification:**
-- [ ] Manual in `npm run electron:dev`: spec step 5
+- [x] Manual in `npm run electron:dev`: spec step 5
 
 **Dependencies:** None (can run in parallel with T1–T6)
 **Files:** `electron/main.js`, possibly `electron/updater.js` (only if it holds a stale `mainWindow` reference; ask first if more is needed)
@@ -132,21 +132,21 @@
 **Description:** The main process fetches `/api/recap/status` at startup, every 60 minutes, and on the `recap:refresh` IPC. When due, it sets `app.dock.setBadge("1")` and shows a native `Notification` at most once per calendar day. When not due, it clears the badge. Clicking the notification shows/creates the window and sends `recap:open` to the renderer. `preload.js` exposes `refreshRecapStatus()` and `onRecapOpen(cb)`. `App.jsx` listens for `recap:open`, and `RecapDialog` calls `refreshRecapStatus()` after Mark as sent.
 
 **Acceptance criteria:**
-- [ ] With the window closed and the status due → badge shown and one notification per day
-- [ ] Mark as sent → the badge clears within a second (IPC, not the hourly poll)
-- [ ] Clicking the notification → the window opens with the recap dialog; the browser (non-Electron) build still works without `electronAPI`
+- [x] With the window closed and the status due → badge shown and one notification per day
+- [x] Mark as sent → the badge clears within a second (IPC, not the hourly poll)
+- [x] Clicking the notification → the window opens with the recap dialog; the browser (non-Electron) build still works without `electronAPI`
 
 **Verification:**
-- [ ] Manual in `npm run electron:dev`: spec step 4
-- [ ] `npm run build` clean
+- [x] Manual in `npm run electron:dev`: spec step 4
+- [x] `npm run build` clean
 
 **Dependencies:** T5, T7
 **Files:** `electron/main.js`, `electron/preload.js`, `frontend/src/App.jsx`, `frontend/src/components/RecapDialog.jsx`
 **Scope:** M
 
 ## Checkpoint C — after T7–T8
-- [ ] Full spec manual test plan (steps 1–7) passes in `npm run electron:dev`
-- [ ] Review with human
+- [x] Full spec manual test plan (steps 1–7) passes in `npm run electron:dev`
+- [x] Review with human
 
 ## Phase 4 — Wrap-up
 
@@ -154,17 +154,17 @@
 **Description:** Add the new settings keys, `/api/recap` endpoints, new files and the stay-alive lifecycle to `SPEC.md` §3/§4, and add the new tests to §5. Add a recap line under Business Rules in `CLAUDE.md`. Mark the spec's status as implemented.
 
 **Acceptance criteria:**
-- [ ] SPEC.md and CLAUDE.md describe the shipped behavior; every spec success criterion is ticked
-- [ ] Full `pytest` green, `npm run build` clean
+- [x] SPEC.md and CLAUDE.md describe the shipped behavior; every spec success criterion is ticked
+- [x] Full `pytest` green, `npm run build` clean
 
 **Verification:**
-- [ ] `pytest && cd frontend && npm run build`
-- [ ] Re-read the spec's success criteria against the app
+- [x] `pytest && cd frontend && npm run build`
+- [x] Re-read the spec's success criteria against the app
 
 **Dependencies:** T8
 **Files:** `SPEC.md`, `CLAUDE.md`, `SPEC-recap-email.md`
 **Scope:** XS
 
 ## Checkpoint: Complete
-- [ ] All acceptance criteria met
+- [x] All acceptance criteria met
 - [ ] Commit → push → `npm run electron:build` → zip → GitHub Release (`.zip` only)

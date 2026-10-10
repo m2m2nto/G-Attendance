@@ -1,6 +1,6 @@
 # Spec: Vacation & Sick Leave Recap Email
 
-> Feature spec. Status: **open questions resolved — awaiting approval** (2026-10-10). Extends `SPEC.md`; on completion, fold the durable parts (settings keys, endpoints, Electron lifecycle change) into `SPEC.md` §3/§4.
+> Feature spec. Status: **implemented** (2026-10-10; phase 1 in build 15, phase 2 in build 16, phase 3 next build). Extends `SPEC.md`; the durable parts (settings keys, endpoints, Electron lifecycle) are folded into `SPEC.md` §3/§4/§5.
 
 ## Objective
 
@@ -31,7 +31,7 @@ The feature splits into two independently testable parts. B depends on A's setti
   - `carried_over` → the credit from the year before
   - `entitlement` → days accrued for the year
   - `total`, `used`, `remaining`
-- **Vacation detail:** one line per month that has an entry, e.g. `- Marzo: 2 giorni (12/03, 13/03)`, built from `get_leave("vacation", year, name)` (`days_count` + `dates_detail`).
+- **Vacation detail:** one line per month that has an entry, e.g. `- Aprile: 2,5 giorni (10(1/2), 16, 17)` (the workbook's `dates_detail` as stored), built from `get_leave("vacation", year, name)` (`days_count` + `dates_detail`).
 - **Sick leave:** total days and one line per month, from `get_leave("sick_leave", year, name)`.
 - **Formatting:** Italian numbers (`2,5`, and whole numbers without decimals, e.g. `26`), dates as `dd/mm/yyyy`, Italian month names.
 - **Recipients:** one recap per active member (members of the current year's Summary sheet), **minus anyone excluded in Settings**. Excluded members don't appear in the recap dialog or in `GET /api/recap`. The app never sends email; the user copies and pastes.
@@ -121,7 +121,7 @@ Locked workbook → `409` as elsewhere. Rendering and due-date logic live in a n
 ## Electron
 
 - **Lifecycle change:** on macOS, `window-all-closed` no longer quits the app or kills Flask. `activate` (Dock click) re-creates the window. `before-quit` still kills Flask.
-- **Badge and notification** (main process): poll `GET /api/recap/status` at startup and every hour. When due: `app.dock.setBadge("1")`, plus a native `Notification` ("Promemoria riepilogo ferie") at most once per calendar day. When not due: clear the badge.
+- **Badge and notification** (main process): poll `GET /api/recap/status` at startup and every hour. When due: `app.dock.setBadge("1")`, plus a native `Notification` ("Vacation recap due" — English, like the rest of the app UI) at most once per calendar day. When not due: clear the badge.
 - **IPC:** `recap:refresh` (renderer → main, sent after Mark as sent, so the badge clears at once) and `recap:open` (main → renderer, sent when the notification is clicked) are exposed through `preload.js`.
 - **Auto-update:** confirm that `updater.applyAndRestart()` still quits and relaunches correctly with the new lifecycle (it must call `app.quit()`/`app.exit()` explicitly rather than rely on window close).
 
