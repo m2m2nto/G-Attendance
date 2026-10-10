@@ -57,7 +57,9 @@ _SETTINGS_FILE = os.path.join(DATA_DIR, "app_settings.json")
 
 _lock = threading.Lock()
 
-# Italian month names used in the Excel file (rows 2-13 of person sheets)
+# Italian month names used in the Excel file (rows 2-13 of person sheets).
+# "Setembre" (sic) matches the spelling in every existing sheet; labels are
+# display-only (months are read by row), so keep new sheets consistent.
 _MONTH_NAMES_IT = [
     "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
     "Luglio", "Agosto", "Setembre", "Ottobre", "Novembre", "Dicembre",

@@ -66,7 +66,7 @@ T7 Electron stay-alive lifecycle   (independent; can run in parallel with T1–T
 
 ### Checkpoint: Complete
 - [x] All spec success criteria ticked
-- [ ] Ready for commit → push → release (`.zip` only), per guardrails
+- [x] Ready for commit → push → release (`.zip` only), per guardrails
 
 ## Risks and Mitigations
 

@@ -1,6 +1,5 @@
 """API layer tests — Flask test client against leave endpoints."""
 
-import json
 import os
 
 

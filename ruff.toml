@@ -1,0 +1,9 @@
+# scripts/import_data.py: obsolete one-time migration, imports removed helpers
+extend-exclude = ["frontend", "node_modules", "build", "dist-backend", "dist-electron", "G-Attendance.app", "scripts/import_data.py"]
+
+[lint]
+select = ["E", "F"]
+ignore = ["E501"]
+
+[lint.per-file-ignores]
+"tests/*" = ["E402"]

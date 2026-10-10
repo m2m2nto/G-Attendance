@@ -1,5 +1,7 @@
 # G-Attendance
 
+[![Tests](https://github.com/m2m2nto/G-Attendance/actions/workflows/tests.yml/badge.svg)](https://github.com/m2m2nto/G-Attendance/actions/workflows/tests.yml)
+
 > **This project is experimental.** It is not intended for production use.
 
 ## What is this

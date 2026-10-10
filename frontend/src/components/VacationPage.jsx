@@ -40,10 +40,9 @@ function parseDateDetails(detail) {
   return result;
 }
 
-function DateChips({ detail, month }) {
+function DateChips({ detail }) {
   const dates = parseDateDetails(detail);
   if (dates.length === 0) return <Typography variant="body2" color="text.secondary">—</Typography>;
-  const monthAbbr = MONTHS[month]?.substring(0, 3) || "";
   return (
     <Box sx={{ display: "flex", gap: 0.4, flexWrap: "wrap" }}>
       {dates.map((d, i) => (
@@ -248,7 +247,7 @@ export default function VacationPage({ year, onDataChange, search = "" }) {
                     />
                   </TableCell>
                   <TableCell>
-                    <DateChips detail={e.dates_detail} month={e.month} />
+                    <DateChips detail={e.dates_detail} />
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.8rem" }}>

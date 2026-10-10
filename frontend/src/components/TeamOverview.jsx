@@ -192,7 +192,7 @@ function MemberCard({ member, sickDays, colorIdx, onAdd, onView }) {
   );
 }
 
-export default function TeamOverview({ year, onDataChange, search = "", onOpenRecap }) {
+export default function TeamOverview({ year, search = "", onOpenRecap }) {
   const [members, setMembers] = useState([]);
   const [sickByPerson, setSickByPerson] = useState({});
   const [loading, setLoading] = useState(true);

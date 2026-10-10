@@ -31,6 +31,9 @@ The project is also a long-running experiment in AI-agent-driven development: mo
 | `cd frontend && npm run build` | Build frontend to `frontend/dist/` |
 | `npm run electron:dev` | Run Electron shell against the dev backend / frontend |
 | `pytest` | Run the backend test suite (requires `pip install -r requirements-dev.txt`) |
+| `ruff check .` | Lint the Python code |
+| `cd frontend && npm test` | Run the frontend Vitest suite |
+| `cd frontend && npm run lint` | Lint the frontend with ESLint |
 | `python scripts/import_data.py` | One-time migration from original Excel workbook |
 
 ### Build & release
@@ -56,7 +59,7 @@ After every pushed commit:
 app.py                    Flask entry point (port 5001, serves API + frontend dist)
 app.spec                  PyInstaller spec
 requirements.txt          Flask 3.1, flask-cors 5, openpyxl 3.1
-requirements-dev.txt      pytest + pytest-cov for backend tests
+requirements-dev.txt      pytest + pytest-cov + ruff for backend tests and lint
 package.json              Electron + build scripts
 electron-builder.yml      Electron packaging config
 
@@ -200,16 +203,17 @@ Current coverage:
 - `test_file_locked.py` — `IOError` on a locked workbook surfaces as HTTP 409.
 - `test_api_leave.py`, `test_smoke.py` — Flask blueprint smoke + leave endpoints.
 - `test_recap_service.py`, `test_api_recap.py` — recap email rendering (Italian numbers, placeholders, exclusions), rolling reminder schedule, `/api/recap` endpoints.
+- `test_api_balances.py`, `test_api_team.py`, `test_api_config.py`, `test_api_holidays.py`, `test_api_sick_leave_docs.py` — remaining blueprints.
 
 Backend changes that touch business rules, the Excel layer, or a leave/balance endpoint must extend this suite (or explain in the PR why no test fits) — see §6 *Always do*.
 
-### Frontend (not yet automated)
+### Frontend
 
-Still manual today: `python app.py` + `npm run dev`, exercise each page, then re-open `data/attendance.xlsx` in Excel to confirm it still loads cleanly.
+Vitest + React Testing Library (jsdom) run with `cd frontend && npm test`; tests sit next to their component as `*.test.jsx`, with the API client mocked via `vi.mock("../api/client")`. Coverage is thin: a smoke test and `LeaveDialog` (prefill, Add/Update enablement, month grouping on save).
 
-Planned: Vitest + React Testing Library for leave dialog validation and balance rendering; Playwright (`webapp-testing` skill) for browser-level flows.
+Most UI is still checked by hand: `python app.py` + `npm run dev`, exercise each page, then re-open `data/attendance.xlsx` in Excel to confirm it still loads cleanly. Every non-trivial UI change still ships with a written manual test plan in the PR description.
 
-Until the frontend suite lands, every non-trivial UI change still ships with a written manual test plan in the PR description.
+CI (`.github/workflows/tests.yml`) runs `ruff`, `pytest`, ESLint and Vitest on every push and PR to `main`.
 
 ## 6. Boundaries
 
