@@ -39,6 +39,10 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
+      # The lockfile resolves to the company npm mirror, unreachable from
+      # GitHub runners; fetch the same tarballs from the public registry.
+      - run: sed -i '' -e 's#https://repository.mobiledatacollection.it/npmrepository/#https://registry.npmjs.org/#' -e '/"resolved"/s#%2f#/#' package-lock.json
+
       - run: npm ci
 
       - run: npm run lint
