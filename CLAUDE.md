@@ -48,7 +48,7 @@ tests/                    Backend pytest suite (run with `pytest`; lint with `ru
 - 11 Luxembourg public holidays per year
 - Sick leave tracked (count + dates), no balance, no cap
 - Sick leave documents: link-only attachments (any number per entry, never copied), each with a "sent to fiduciaire" flag; stored in `app_settings.json`
-- Recap email (`SPEC-recap-email.md`): per-member Italian recap, copied to the clipboard (never sent by the app); due every N months after "Mark as sent"; banner + Dock badge + daily notification. Closing the window keeps the app in the Dock; Cmd+Q quits
+- Recap email (`SPEC.md` §4): per-member Italian recap, copied to the clipboard (never sent by the app); due every N months after "Mark as sent"; banner + Dock badge + daily notification. Closing the window keeps the app in the Dock; Cmd+Q quits
 
 ## Guardrails (see SPEC.md §6 for the full list)
 - All Excel I/O goes through `services/excel_service.py`. `data/attendance.xlsx` must stay Excel-editable.

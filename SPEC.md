@@ -121,7 +121,6 @@ tests/                    Backend pytest suite
   test_api_recap.py
   test_smoke.py
 
-tasks/                    Working notes for in-flight plans (plan.md, todo.md) — not packaged
 dist-backend/             PyInstaller output (gitignored)
 dist-electron/            electron-builder output (gitignored)
 G-Attendance.app          Last built macOS app (kept at repo root for convenience)
@@ -178,7 +177,7 @@ Swaps to any of the above require explicit approval (see §6 Boundaries).
 - `data/attendance.xlsx` must remain openable and editable in Excel at all times.
 - Preserve header formatting, column widths, and existing sheet structure when writing.
 - No pickling, no binary sidecar formats — if a value can live in the workbook, it lives in the workbook.
-- Non-tabular app state goes in `data/app_settings.json`. This currently includes `app_users` (the list of operators allowed to record actions) and `current_user` (the active operator, used for audit-trail identity in the UI). It also holds `sick_leave_docs`: per sick leave entry (`person|year|month`), a list of linked documents, each with its absolute path (link-only — files are never copied, moved, or deleted) and its own `sent_to_fiduciaire` flag. The recap email (see `SPEC-recap-email.md`) adds `recap_subject_template`, `recap_body_template`, `recap_frequency_months` (1–12, default 3), `recap_excluded_members` and `recap_last_sent` (ISO date; missing = due now).
+- Non-tabular app state goes in `data/app_settings.json`. This currently includes `app_users` (the list of operators allowed to record actions) and `current_user` (the active operator, used for audit-trail identity in the UI). It also holds `sick_leave_docs`: per sick leave entry (`person|year|month`), a list of linked documents, each with its absolute path (link-only — files are never copied, moved, or deleted) and its own `sent_to_fiduciaire` flag. The recap email (see *Recap email* below) adds `recap_subject_template`, `recap_body_template`, `recap_frequency_months` (1–12, default 3), `recap_excluded_members` and `recap_last_sent` (ISO date; missing = due now).
 
 ### Business rules (Luxembourg)
 
@@ -188,6 +187,13 @@ Swaps to any of the above require explicit approval (see §6 Boundaries).
 - Half-day leave supported (0.5-day increments).
 - 11 public holidays per year (fixed list, maintained via Holidays page).
 - Sick leave: counted + dated; no balance, no cap.
+
+### Recap email
+
+- One Italian recap per active member (current year's Summary sheet) minus `recap_excluded_members`. The app never sends email: the user copies subject/body to the clipboard.
+- Covers 1 January to today. Numbers come from `compute_balance` and `get_leave`, so they always match what the app shows. Italian formatting: `2,5`, whole numbers without decimals, `dd/mm/yyyy`, Italian month names.
+- Template placeholders: `{nome}`, `{anno}`, `{data_oggi}`, `{residuo_anno_precedente}`, `{scadenza_residuo}`, `{maturate_anno}`, `{totale_disponibile}`, `{ferie_godute}`, `{ferie_residue}`, `{dettaglio_ferie}`, `{giorni_malattia}`, `{dettaglio_malattia}`, `{mittente}` (`current_user`). Unknown placeholders are left as is. Defaults and the list live in `services/recap_service.py`.
+- Due date is rolling: `recap_last_sent` + `recap_frequency_months`; no `recap_last_sent` means due now. When due: in-app banner, Dock badge, and at most one macOS notification per day.
 
 ## 5. Testing strategy
 
