@@ -1,7 +1,7 @@
 {
   "name": "g-attendance",
   "version": "1.0.0",
-  "buildNumber": 18,
+  "buildNumber": 19,
   "private": true,
   "main": "electron/main.js",
   "scripts": {
