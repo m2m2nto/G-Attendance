@@ -106,6 +106,7 @@ frontend/                 React 18 + MUI 6 + Vite 6
       UpdateBanner.jsx    Auto-update prompt (driven by electron/updater.js IPC events)
       RecapDialog.jsx     Per-member recap email preview, Copy, Mark as sent
       RecapReminderBanner.jsx  "Recap due" banner (Open recap / Later)
+      FiduciaireReminderBanner.jsx  "Send sick leave documents to the fiduciaire" banner
       RecapSettings.jsx   Settings section: templates, reminder frequency, included members
 
 tests/                    Backend pytest suite
@@ -187,6 +188,7 @@ Swaps to any of the above require explicit approval (see §6 Boundaries).
 - Half-day leave supported (0.5-day increments).
 - 11 public holidays per year (fixed list, maintained via Holidays page).
 - Sick leave: counted + dated; no balance, no cap.
+- Sick leave documents go to the fiduciaire at least 5 days before the end of the month (salary slip). Reminder: any sick leave of the current or previous month with no document, or a document not flagged as sent, shows an in-app banner (deadline / overdue), counts in the Dock badge, and triggers at most one macOS notification per day. The Sick Leave table is sortable and opens newest first.
 
 ### Recap email
 

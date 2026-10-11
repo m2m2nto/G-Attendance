@@ -1,11 +1,12 @@
 import os
 import subprocess
+from datetime import date
 
 from flask import Blueprint, jsonify, request
 from services.excel_service import (
     get_leave, add_leave, update_leave, delete_leave,
     get_sick_leave_attachments, add_sick_leave_attachments,
-    remove_sick_leave_attachment, set_sick_leave_sent,
+    remove_sick_leave_attachment, set_sick_leave_sent, get_fiduciaire_reminder,
 )
 
 leave_bp = Blueprint("leave", __name__)
@@ -126,3 +127,9 @@ def mark_sick_leave_sent(name, year, month):
         return jsonify({"attachments": set_sick_leave_sent(name, year, month, _body_path(), sent)})
     except ValueError as e:
         return jsonify({"error": str(e)}), 404
+
+
+@leave_bp.route("/sick_leave/fiduciaire-reminder", methods=["GET"])
+def fiduciaire_reminder():
+    """Sick leave entries of the current and previous month not yet sent to the fiduciaire."""
+    return jsonify(get_fiduciaire_reminder(date.today()))

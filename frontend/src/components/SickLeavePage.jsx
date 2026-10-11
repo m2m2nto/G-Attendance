@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead,
   TableRow, Paper, Fab, IconButton, Snackbar, Alert, Chip, FormControl,
-  InputLabel, Select, MenuItem, Tooltip, Checkbox,
+  InputLabel, Select, MenuItem, Tooltip, Checkbox, TableSortLabel,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
@@ -22,7 +22,29 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-export default function SickLeavePage({ year, onDataChange, search = "" }) {
+// An entry counts as sent once it has documents and every one is flagged as sent.
+const allSent = (e) => e.attachments.length > 0 && e.attachments.every((a) => a.sent_to_fiduciaire);
+
+const COLUMNS = [
+  { id: "name", label: "Person", value: (e) => e.name },
+  { id: "month", label: "Month", value: (e) => e.month },
+  { id: "days_count", label: "Days", align: "right", value: (e) => e.days_count },
+  { id: "dates_detail", label: "Date Details", sortable: false },
+  { id: "documents", label: "Documents", value: (e) => e.attachments.length },
+  { id: "fiduciaire", label: "Fiduciaire", align: "center", value: (e) => (allSent(e) ? 1 : 0) },
+];
+
+function getComparator(order, orderBy) {
+  const { value } = COLUMNS.find((c) => c.id === orderBy);
+  const sign = order === "desc" ? -1 : 1;
+  return (a, b) => {
+    const va = value(a);
+    const vb = value(b);
+    return va < vb ? -sign : va > vb ? sign : 0;
+  };
+}
+
+export default function SickLeavePage({ year, onDataChange, onFiduciaireChange, search = "" }) {
   const [entries, setEntries] = useState([]);
   const [team, setTeam] = useState([]);
   const [filterName, setFilterName] = useState("all");
@@ -30,6 +52,8 @@ export default function SickLeavePage({ year, onDataChange, search = "" }) {
   const [editEntry, setEditEntry] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [snack, setSnack] = useState({ open: false, message: "", severity: "success" });
+  const [order, setOrder] = useState("desc"); // newest first
+  const [orderBy, setOrderBy] = useState("month");
 
   const load = () => {
     const params = { year };
@@ -77,17 +101,27 @@ export default function SickLeavePage({ year, onDataChange, search = "" }) {
       const message = successMessage?.(result);
       if (message) setSnack({ open: true, message, severity: "success" });
       load();
+      onFiduciaireChange?.();
     } catch (err) {
       setSnack({ open: true, message: err.response?.data?.error || "Error updating document", severity: "error" });
     }
   };
 
+  const handleSort = (columnId) => {
+    const isAsc = orderBy === columnId && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(columnId);
+  };
+
   const q = search.trim().toLowerCase();
-  const visibleEntries = q
-    ? entries.filter((e) =>
-        [e.name, MONTHS[e.month], e.dates_detail, String(e.days_count), ...e.attachments.map((a) => a.file_name)]
-          .some((v) => (v || "").toLowerCase().includes(q)))
-    : entries;
+  const visibleEntries = useMemo(() => {
+    const filtered = q
+      ? entries.filter((e) =>
+          [e.name, MONTHS[e.month], e.dates_detail, String(e.days_count), ...e.attachments.map((a) => a.file_name)]
+            .some((v) => (v || "").toLowerCase().includes(q)))
+      : entries;
+    return [...filtered].sort(getComparator(order, orderBy));
+  }, [entries, order, orderBy, q]);
 
   return (
     <Box>
@@ -110,12 +144,21 @@ export default function SickLeavePage({ year, onDataChange, search = "" }) {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Person</TableCell>
-              <TableCell>Month</TableCell>
-              <TableCell align="right">Days</TableCell>
-              <TableCell>Date Details</TableCell>
-              <TableCell>Documents</TableCell>
-              <TableCell align="center">Fiduciaire</TableCell>
+              {COLUMNS.map((col) => (
+                <TableCell key={col.id} align={col.align}>
+                  {col.sortable === false ? (
+                    col.label
+                  ) : (
+                    <TableSortLabel
+                      active={orderBy === col.id}
+                      direction={orderBy === col.id ? order : "asc"}
+                      onClick={() => handleSort(col.id)}
+                    >
+                      {col.label}
+                    </TableSortLabel>
+                  )}
+                </TableCell>
+              ))}
               <TableCell align="right" width={100}>Actions</TableCell>
             </TableRow>
           </TableHead>
