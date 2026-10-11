@@ -107,17 +107,19 @@ function createWindow() {
   });
 }
 
-// -- Recap reminder: Dock badge + daily notification ------------------------
+// -- Reminders (recap + fiduciaire): Dock badge + daily notification --------
 
 const RECAP_POLL_MS = 60 * 60 * 1000;
 let lastRecapNotifiedDay = null;
 let recapNotification = null; // keep a reference so the click handler isn't garbage-collected
 let pendingRecapOpen = false; // a notification click that the renderer hasn't picked up yet
+let lastFiduciaireNotifiedDay = null;
+let fiduciaireNotification = null;
 
-function fetchRecapStatus() {
+function fetchJson(apiPath) {
   return new Promise((resolve) => {
     http
-      .get(`${FLASK_URL}/api/recap/status`, (res) => {
+      .get(`${FLASK_URL}${apiPath}`, (res) => {
         let body = "";
         res.on("data", (chunk) => (body += chunk));
         res.on("end", () => {
@@ -145,13 +147,37 @@ function openRecapFromNotification() {
   }
 }
 
-async function refreshRecapReminder() {
-  const status = await fetchRecapStatus();
-  if (!status) return;
-  app.dock?.setBadge(status.is_due ? "1" : "");
+function showMainWindow() {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+  } else {
+    createWindow(); // the in-app banner points to the Sick Leave page
+  }
+}
+
+async function refreshReminders() {
+  const [status, fiduciaire] = await Promise.all([
+    fetchJson("/api/recap/status"),
+    fetchJson("/api/leave/sick_leave/fiduciaire-reminder"),
+  ]);
+  const dueCount = (status?.is_due ? 1 : 0) + (fiduciaire?.is_due ? 1 : 0);
+  app.dock?.setBadge(dueCount ? String(dueCount) : "");
 
   const today = new Date().toDateString();
-  if (status.is_due && lastRecapNotifiedDay !== today && Notification.isSupported()) {
+  if (fiduciaire?.is_due && lastFiduciaireNotifiedDay !== today && Notification.isSupported()) {
+    lastFiduciaireNotifiedDay = today;
+    const names = [...new Set(fiduciaire.pending.map((p) => p.name))].join(", ");
+    fiduciaireNotification = new Notification({
+      title: "Sick leave documents to send",
+      body: `Send the sick leave documents to the fiduciaire: ${names}.`,
+    });
+    fiduciaireNotification.on("click", showMainWindow);
+    fiduciaireNotification.show();
+  }
+
+  if (status?.is_due && lastRecapNotifiedDay !== today && Notification.isSupported()) {
     lastRecapNotifiedDay = today;
     recapNotification = new Notification({
       title: "Vacation recap due",
@@ -162,7 +188,7 @@ async function refreshRecapReminder() {
   }
 }
 
-ipcMain.handle("recap:refresh", () => refreshRecapReminder());
+ipcMain.handle("recap:refresh", () => refreshReminders());
 
 ipcMain.handle("recap:take-pending-open", () => {
   const pending = pendingRecapOpen;
@@ -224,8 +250,8 @@ app.on("ready", async () => {
     flaskReady = true;
     createWindow();
 
-    refreshRecapReminder();
-    setInterval(refreshRecapReminder, RECAP_POLL_MS);
+    refreshReminders();
+    setInterval(refreshReminders, RECAP_POLL_MS);
 
     // Auto-check for updates on startup (packaged builds only)
     if (app.isPackaged) {
@@ -239,7 +265,7 @@ app.on("ready", async () => {
 });
 
 // macOS convention: closing the window keeps the app (and Flask) alive in the
-// Dock, so the recap reminder badge still shows. Cmd+Q quits via before-quit.
+// Dock, so the reminder badge still shows. Cmd+Q quits via before-quit.
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });

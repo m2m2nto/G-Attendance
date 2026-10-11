@@ -9,7 +9,8 @@ import HolidaysPage from "./components/HolidaysPage";
 import SettingsPage from "./components/SettingsPage";
 import RecapDialog from "./components/RecapDialog";
 import RecapReminderBanner from "./components/RecapReminderBanner";
-import { getAppUsers, getRecapStatus } from "./api/client";
+import FiduciaireReminderBanner from "./components/FiduciaireReminderBanner";
+import { getAppUsers, getRecapStatus, getFiduciaireReminder } from "./api/client";
 
 const PAGES = {
   team: TeamOverview,
@@ -29,6 +30,8 @@ export default function App() {
   const [recapOpen, setRecapOpen] = useState(false);
   const [recapStatus, setRecapStatus] = useState(null);
   const [recapSnoozed, setRecapSnoozed] = useState(false); // "Later" lasts until the next launch
+  const [fiduciaireStatus, setFiduciaireStatus] = useState(null);
+  const [fiduciaireSnoozed, setFiduciaireSnoozed] = useState(false);
 
   // Clear the universal search when switching pages — a query is scoped to one view.
   const changePage = useCallback((next) => {
@@ -43,6 +46,19 @@ export default function App() {
   useEffect(() => {
     getRecapStatus().then(setRecapStatus).catch(() => {});
   }, []);
+
+  const refreshFiduciaire = useCallback(() => {
+    getFiduciaireReminder().then(setFiduciaireStatus).catch(() => {});
+    window.electronAPI?.refreshRecapStatus?.(); // also refreshes the sick leave part of the Dock badge
+  }, []);
+
+  useEffect(refreshFiduciaire, [refreshKey, refreshFiduciaire]);
+
+  const openSickLeave = useCallback(() => {
+    const first = fiduciaireStatus?.pending[0];
+    if (first) setYear(first.year);
+    changePage("sick");
+  }, [fiduciaireStatus, changePage]);
 
   // Electron: a click on the "recap due" notification opens the recap dialog.
   useEffect(() => {
@@ -81,13 +97,22 @@ export default function App() {
         setAppUsers={setAppUsers}
         currentUser={currentUser}
         setCurrentUser={setCurrentUser}
-        recapBanner={!recapSnoozed && (
-          <RecapReminderBanner
-            status={recapStatus}
-            onOpenRecap={() => setRecapOpen(true)}
-            onLater={() => setRecapSnoozed(true)}
-          />
-        )}
+        recapBanner={<>
+          {!recapSnoozed && (
+            <RecapReminderBanner
+              status={recapStatus}
+              onOpenRecap={() => setRecapOpen(true)}
+              onLater={() => setRecapSnoozed(true)}
+            />
+          )}
+          {!fiduciaireSnoozed && (
+            <FiduciaireReminderBanner
+              status={fiduciaireStatus}
+              onOpenSickLeave={openSickLeave}
+              onLater={() => setFiduciaireSnoozed(true)}
+            />
+          )}
+        </>}
       >
         <PageComponent
           year={year}
@@ -96,6 +121,7 @@ export default function App() {
           currentUser={currentUser}
           search={search}
           onOpenRecap={() => setRecapOpen(true)}
+          onFiduciaireChange={refreshFiduciaire}
         />
       </Layout>
       <RecapDialog open={recapOpen} onClose={() => setRecapOpen(false)} onSent={handleRecapSent} />

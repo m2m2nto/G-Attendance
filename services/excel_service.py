@@ -1,9 +1,10 @@
+import calendar
 import json
 import os
 import re
 import sys
 import threading
-from datetime import datetime
+from datetime import date, datetime
 from openpyxl import load_workbook
 
 _DATE_PREFIX_RE = re.compile(r"^\d{4}-\d{2}-\d{2}")
@@ -690,6 +691,38 @@ def set_sick_leave_sent(name, year, month, path, sent):
         raise ValueError("This file is not linked to this sick leave")
     match[0]["sent_to_fiduciaire"] = bool(sent)
     return _save_sick_files(settings, name, year, month, files)
+
+
+# Sick leave documents must reach the fiduciaire at least FIDUCIAIRE_LEAD_DAYS
+# before the end of the month, so they make it into that month's salary slip.
+# The reminder looks at the current and previous month only: older entries
+# predate the document flags and their payroll is long closed.
+FIDUCIAIRE_LEAD_DAYS = 5
+
+
+def _fiduciaire_deadline(year, month):
+    last_day = calendar.monthrange(year, month)[1]
+    return date(year, month, last_day - FIDUCIAIRE_LEAD_DAYS)
+
+
+def get_fiduciaire_reminder(today):
+    """Sick leave entries whose documents are not all sent to the fiduciaire.
+
+    An entry is pending when it has no linked document or any linked
+    document is not flagged as sent.
+    """
+    prev_year, prev_month = (today.year, today.month - 1) if today.month > 1 else (today.year - 1, 12)
+    pending = []
+    for y, m in ((prev_year, prev_month), (today.year, today.month)):
+        for e in get_leave("sick_leave", year=y, month=m):
+            if e["attachments"] and all(a["sent_to_fiduciaire"] for a in e["attachments"]):
+                continue
+            deadline = _fiduciaire_deadline(y, m)
+            pending.append({
+                "name": e["name"], "year": y, "month": m,
+                "deadline": deadline.isoformat(), "overdue": today > deadline,
+            })
+    return {"pending": pending, "is_due": bool(pending)}
 
 
 # ---------------------------------------------------------------------------

@@ -25,6 +25,7 @@ export const openSickLeaveAttachment = (e, path) => api.post(`${sickDocUrl(e)}/a
 export const removeSickLeaveAttachment = (e, path) =>
   api.delete(`${sickDocUrl(e)}/attachment`, { data: { path } }).then((r) => r.data);
 export const setSickLeaveSent = (e, path, sent) => api.put(`${sickDocUrl(e)}/fiduciaire`, { path, sent }).then((r) => r.data);
+export const getFiduciaireReminder = () => api.get("/leave/sick_leave/fiduciaire-reminder").then((r) => r.data);
 
 // Holidays
 export const getHolidays = (params) => api.get("/holidays", { params }).then((r) => r.data);

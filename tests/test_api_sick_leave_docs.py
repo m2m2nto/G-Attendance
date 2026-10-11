@@ -181,3 +181,49 @@ def test_deleting_sick_leave_drops_its_documents(flask_client, monkeypatch, tmp_
 
     _add_sick_leave(flask_client)
     assert _attachments(flask_client) == []
+
+
+# ---------------------------------------------------------------------------
+# Fiduciaire reminder — current and previous month, pending until every
+# linked document is flagged as sent.
+# ---------------------------------------------------------------------------
+
+from datetime import date  # noqa: E402
+
+from services.excel_service import get_fiduciaire_reminder  # noqa: E402
+
+
+def test_reminder_lists_sick_leave_without_documents(flask_client):
+    _add_sick_leave(flask_client, month=5)
+    assert get_fiduciaire_reminder(date(2026, 5, 20)) == {
+        "pending": [{"name": "Alice", "year": 2026, "month": 5, "deadline": "2026-05-26", "overdue": False}],
+        "is_due": True,
+    }
+
+
+def test_reminder_flags_previous_month_as_overdue(flask_client):
+    _add_sick_leave(flask_client, month=5)
+    (entry,) = get_fiduciaire_reminder(date(2026, 6, 3))["pending"]
+    assert entry["month"] == 5 and entry["overdue"] is True
+
+
+def test_reminder_ignores_older_months(flask_client):
+    _add_sick_leave(flask_client, month=5)
+    assert get_fiduciaire_reminder(date(2026, 7, 1)) == {"pending": [], "is_due": False}
+
+
+def test_reminder_clears_once_every_document_is_sent(flask_client, monkeypatch, tmp_path):
+    _add_sick_leave(flask_client, month=5)
+    first, second = _make_docs(tmp_path, "a.pdf", "b.pdf")
+    _link(flask_client, monkeypatch, first, second)
+    flask_client.put(f"{URL}/fiduciaire", json={"path": str(first), "sent": True})
+    assert get_fiduciaire_reminder(date(2026, 5, 20))["is_due"] is True
+
+    flask_client.put(f"{URL}/fiduciaire", json={"path": str(second), "sent": True})
+    assert get_fiduciaire_reminder(date(2026, 5, 20))["is_due"] is False
+
+
+def test_reminder_endpoint(flask_client):
+    resp = flask_client.get("/api/leave/sick_leave/fiduciaire-reminder")
+    assert resp.status_code == 200
+    assert set(resp.get_json()) == {"pending", "is_due"}
